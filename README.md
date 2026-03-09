@@ -1,4 +1,4 @@
-# OvertimeCalculator
+# 加薪
 
 一个用于记录每日加班时长并自动计算当月加班工资的原生 Android 应用。
 

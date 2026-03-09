@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Overtime Calculator Icon Concept 2</title>
+  <desc id="desc">A dark midnight app icon with a clock ring, moon-like overtime cutout, and a warm highlight.</desc>
+  <defs>
+    <linearGradient id="bg" x1="160" y1="128" x2="864" y2="896" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#20263a"/>
+      <stop offset="1" stop-color="#43547d"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="578" y1="308" x2="790" y2="518" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffd87a"/>
+      <stop offset="1" stop-color="#f19e35"/>
+    </linearGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="248" fill="url(#bg)"/>
+  <circle cx="512" cy="512" r="292" fill="#f4f7ff" opacity="0.12"/>
+  <circle cx="512" cy="512" r="246" fill="none" stroke="#edf2ff" stroke-width="80"/>
+  <path d="M512 266a246 246 0 0 1 213 124l-89 44a146 146 0 0 0-124-68z" fill="url(#gold)"/>
+  <circle cx="512" cy="512" r="148" fill="#edf2ff"/>
+  <circle cx="580" cy="452" r="124" fill="#43547d"/>
+  <circle cx="476" cy="576" r="22" fill="#2b3653"/>
+  <path d="M476 576V458" stroke="#2b3653" stroke-width="34" stroke-linecap="round"/>
+  <path d="M476 576l92 42" stroke="#2b3653" stroke-width="34" stroke-linecap="round"/>
+  <circle cx="742" cy="348" r="22" fill="#ffd87a"/>
+  <circle cx="788" cy="424" r="14" fill="#ffd87a" opacity="0.76"/>
+</svg>
