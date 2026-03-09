@@ -45,6 +45,7 @@ class MainFlowTest {
         waitForTag("settings_screen")
         composeRule.onNodeWithTag("settings_screen").assertIsDisplayed()
         composeRule.onNodeWithTag("hourly_mode_row").assertIsDisplayed()
+        composeRule.onNodeWithTag("edit_multipliers_button").assertIsDisplayed()
         composeRule.onNodeWithTag("current_version_text").assertIsDisplayed()
         composeRule.onNodeWithTag("check_update_button").assertIsDisplayed()
 
@@ -81,10 +82,9 @@ class MainFlowTest {
         composeRule.onNodeWithTag("day_card_2026-03-03").performClick()
         waitForTag("day_editor_sheet")
 
-        composeRule.onNodeWithTag("editor_hours").performTextClearance()
-        composeRule.onNodeWithTag("editor_hours").performTextInput("2")
-        composeRule.onNodeWithTag("editor_minutes").performTextClearance()
-        composeRule.onNodeWithTag("editor_minutes").performTextInput("0")
+        composeRule.onNodeWithTag("clear_duration").performClick()
+        composeRule.onNodeWithTag("add_one_hour").performClick()
+        composeRule.onNodeWithTag("add_one_hour").performClick()
         composeRule.onNodeWithTag("editor_save").performClick()
 
         composeRule.waitUntil(10_000) {
@@ -98,10 +98,9 @@ class MainFlowTest {
         composeRule.onNodeWithTag("day_card_2026-03-03").performClick()
         waitForTag("day_editor_sheet")
 
-        composeRule.onNodeWithTag("editor_hours").performTextClearance()
-        composeRule.onNodeWithTag("editor_hours").performTextInput("2")
-        composeRule.onNodeWithTag("editor_minutes").performTextClearance()
-        composeRule.onNodeWithTag("editor_minutes").performTextInput("0")
+        composeRule.onNodeWithTag("clear_duration").performClick()
+        composeRule.onNodeWithTag("add_one_hour").performClick()
+        composeRule.onNodeWithTag("add_one_hour").performClick()
         composeRule.onNodeWithTag("editor_save").performClick()
         composeRule.waitUntil(10_000) {
             composeRule.onAllNodes(hasTag("day_editor_sheet")).fetchSemanticsNodes().isEmpty()
@@ -119,6 +118,22 @@ class MainFlowTest {
         composeRule.onNodeWithTag("back_button").performClick()
         waitForTag("home_screen")
         composeRule.onNodeWithText("时薪来源：总额反推", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun multipliersAreEditedInBottomSheet() {
+        composeRule.onNodeWithTag("settings_button").performClick()
+        waitForTag("settings_screen")
+
+        composeRule.onNodeWithTag("edit_multipliers_button").performClick()
+        waitForTag("multiplier_editor_sheet")
+        composeRule.onNodeWithTag("multiplier_editor_sheet").assertIsDisplayed()
+        composeRule.onNodeWithTag("weekday_rate_input").performTextClearance()
+        composeRule.onNodeWithTag("weekday_rate_input").performTextInput("1.80")
+        composeRule.onNodeWithTag("save_multipliers_button").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("1.80x", substring = true).assertIsDisplayed()
     }
 
     private fun ensureManualMode() {

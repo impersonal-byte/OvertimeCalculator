@@ -194,6 +194,20 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun saveOvertimeMinutes(date: LocalDate, totalMinutes: Int, overrideDayType: DayType?) {
+        viewModelScope.launch {
+            runCatching {
+                require(totalMinutes >= 0) { "时长不能为负数" }
+                repository.saveOvertime(date, totalMinutes, overrideDayType)
+            }.onSuccess {
+                selectedEditorDate.value = null
+                emitFeedback()
+            }.onFailure {
+                message.value = it.message ?: "保存失败"
+            }
+        }
+    }
+
     fun updateManualHourlyRate(rateText: String) {
         viewModelScope.launch {
             runCatching {
