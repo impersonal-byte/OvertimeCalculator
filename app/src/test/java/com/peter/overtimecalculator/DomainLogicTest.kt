@@ -8,6 +8,10 @@ import com.peter.overtimecalculator.domain.MonthlyConfig
 import com.peter.overtimecalculator.domain.MonthlyOvertimeCalculator
 import com.peter.overtimecalculator.domain.PayFormula
 import com.peter.overtimecalculator.domain.ReverseHourlyRateCalculator
+import com.peter.overtimecalculator.ui.CalendarCellColorRole
+import com.peter.overtimecalculator.ui.CalendarCellIntensityTier
+import com.peter.overtimecalculator.ui.buildCalendarCellPresentations
+import com.peter.overtimecalculator.ui.formatDecimalHours
 import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
@@ -72,6 +76,45 @@ class DomainLogicTest {
     }
 
     @Test
+    fun calendarCellPresentation_formatsDecimalHours() {
+        assertEquals("2.5h", formatDecimalHours(150))
+        assertEquals("2.0h", formatDecimalHours(120))
+        assertEquals("", formatDecimalHours(0))
+    }
+
+    @Test
+    fun calendarCellPresentation_usesRelativePayTiers() {
+        val presentations = buildCalendarCellPresentations(
+            listOf(
+                dayCell("2026-03-03", 60, DayType.WORKDAY, 80.0),
+                dayCell("2026-03-04", 120, DayType.REST_DAY, 200.0),
+                dayCell("2026-03-05", 180, DayType.HOLIDAY, 320.0),
+            ),
+        )
+
+        assertEquals(CalendarCellIntensityTier.LOW, presentations.getValue(LocalDate.parse("2026-03-03")).tier)
+        assertEquals(CalendarCellColorRole.WORKDAY_OVERTIME, presentations.getValue(LocalDate.parse("2026-03-03")).colorRole)
+        assertEquals(CalendarCellIntensityTier.MID, presentations.getValue(LocalDate.parse("2026-03-04")).tier)
+        assertEquals(CalendarCellColorRole.REST_DAY_OVERTIME, presentations.getValue(LocalDate.parse("2026-03-04")).colorRole)
+        assertEquals(CalendarCellIntensityTier.HIGH, presentations.getValue(LocalDate.parse("2026-03-05")).tier)
+        assertEquals(
+            CalendarCellColorRole.HOLIDAY_OVERTIME_HIGH,
+            presentations.getValue(LocalDate.parse("2026-03-05")).colorRole,
+        )
+    }
+
+    @Test
+    fun calendarCellPresentation_fallsBackWhenMonthHasNoPay() {
+        val presentation = buildCalendarCellPresentations(
+            listOf(dayCell("2026-03-03", 120, DayType.WORKDAY, 0.0)),
+        ).getValue(LocalDate.parse("2026-03-03"))
+
+        assertEquals(CalendarCellIntensityTier.NONE, presentation.tier)
+        assertEquals(CalendarCellColorRole.DEFAULT, presentation.colorRole)
+        assertEquals("2.0h", presentation.hoursLabel)
+    }
+
+    @Test
     fun configPropagationPlanner_updatesOnlyFutureUnlockedMonths() {
         val planner = ConfigPropagationPlanner()
         val selected = testConfig(yearMonth = YearMonth.of(2026, 3), hourlyRate = 88.0, lockedByUser = true)
@@ -104,4 +147,12 @@ class DomainLogicTest {
             lockedByUser = lockedByUser,
         )
     }
+
+    private fun dayCell(date: String, minutes: Int, dayType: DayType, pay: Double) =
+        com.peter.overtimecalculator.domain.DayCellUiState(
+            date = LocalDate.parse(date),
+            overtimeMinutes = minutes,
+            dayType = dayType,
+            pay = pay,
+        )
 }
