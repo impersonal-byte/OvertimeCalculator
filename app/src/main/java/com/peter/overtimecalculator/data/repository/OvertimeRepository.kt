@@ -9,6 +9,7 @@ import com.peter.overtimecalculator.data.db.OvertimeEntryEntity
 import com.peter.overtimecalculator.data.db.toDomain
 import com.peter.overtimecalculator.data.db.toEntity
 import com.peter.overtimecalculator.data.db.toPair
+import com.peter.overtimecalculator.data.holiday.HolidayRulesRepository
 import com.peter.overtimecalculator.domain.ConfigPropagationPlanner
 import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.HolidayCalendar
@@ -16,8 +17,11 @@ import com.peter.overtimecalculator.domain.HourlyRateSource
 import com.peter.overtimecalculator.domain.MonthlyConfig
 import com.peter.overtimecalculator.domain.MonthlyOvertimeCalculator
 import com.peter.overtimecalculator.domain.ObservedMonth
+import com.peter.overtimecalculator.domain.OvertimeWriteGateway
 import com.peter.overtimecalculator.domain.ReverseHourlyRateCalculator
 import com.peter.overtimecalculator.domain.ReverseRateResult
+import com.peter.overtimecalculator.domain.ZeroDecimal
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.flow.Flow
@@ -27,10 +31,11 @@ class OvertimeRepository(
     private val database: AppDatabase,
     private val dao: OvertimeDao,
     private val holidayCalendar: HolidayCalendar,
+    private val holidayRulesRepository: HolidayRulesRepository,
     private val configPropagationPlanner: ConfigPropagationPlanner,
     private val monthlyOvertimeCalculator: MonthlyOvertimeCalculator,
     private val reverseHourlyRateCalculator: ReverseHourlyRateCalculator,
-) {
+) : OvertimeWriteGateway {
     fun observeMonth(yearMonth: YearMonth): Flow<ObservedMonth> {
         val startDate = yearMonth.atDay(1).toString()
         val endDate = yearMonth.atEndOfMonth().toString()
@@ -38,7 +43,8 @@ class OvertimeRepository(
             dao.observeAllConfigs(),
             dao.observeEntriesInRange(startDate, endDate),
             dao.observeOverridesInRange(startDate, endDate),
-        ) { configs, entries, overrides ->
+            holidayRulesRepository.rules,
+        ) { configs, entries, overrides, _ ->
             val resolvedConfig = resolveConfig(configs.map(MonthlyConfigEntity::toDomain), yearMonth)
             monthlyOvertimeCalculator.calculate(
                 yearMonth = yearMonth,
@@ -55,10 +61,11 @@ class OvertimeRepository(
         }
     }
 
-    suspend fun saveOvertime(date: LocalDate, minutes: Int, overrideDayType: DayType?) {
+    override suspend fun saveOvertime(date: LocalDate, minutes: Int, overrideDayType: DayType?) {
         database.withTransaction {
             ensureMaterializedConfig(date.toYearMonth(), dao.getAllConfigs().map(MonthlyConfigEntity::toDomain))
-            if (minutes > 0) {
+
+            if (minutes != 0) {
                 dao.upsertEntry(OvertimeEntryEntity(date = date.toString(), minutes = minutes))
             } else {
                 dao.deleteEntry(date.toString())
@@ -72,8 +79,7 @@ class OvertimeRepository(
         }
     }
 
-    suspend fun updateManualHourlyRate(yearMonth: YearMonth, hourlyRate: Double) {
-        require(hourlyRate >= 0.0) { "时薪不能小于 0" }
+    override suspend fun updateManualHourlyRate(yearMonth: YearMonth, hourlyRate: BigDecimal) {
         updateConfig(yearMonth) { base ->
             base.copy(
                 hourlyRate = hourlyRate,
@@ -82,13 +88,12 @@ class OvertimeRepository(
         }
     }
 
-    suspend fun updateMultipliers(
+    override suspend fun updateMultipliers(
         yearMonth: YearMonth,
-        weekdayRate: Double,
-        restDayRate: Double,
-        holidayRate: Double,
+        weekdayRate: BigDecimal,
+        restDayRate: BigDecimal,
+        holidayRate: BigDecimal,
     ) {
-        require(weekdayRate > 0.0 && restDayRate > 0.0 && holidayRate > 0.0) { "倍率必须大于 0" }
         updateConfig(yearMonth) { base ->
             base.copy(
                 weekdayRate = weekdayRate,
@@ -98,9 +103,9 @@ class OvertimeRepository(
         }
     }
 
-    suspend fun reverseEngineerHourlyRate(
+    override suspend fun reverseEngineerHourlyRate(
         yearMonth: YearMonth,
-        overtimePayInput: Double,
+        overtimePayInput: BigDecimal,
     ): ReverseRateResult {
         return database.withTransaction {
             val configs = dao.getAllConfigs().map(MonthlyConfigEntity::toDomain)
@@ -129,7 +134,7 @@ class OvertimeRepository(
         }
     }
 
-    fun resolveDayType(date: LocalDate, overrideType: DayType?): DayType {
+    override fun resolveDayType(date: LocalDate, overrideType: DayType?): DayType {
         return holidayCalendar.resolveDayType(date, overrideType)
     }
 
@@ -176,11 +181,11 @@ class OvertimeRepository(
     private fun defaultConfig(yearMonth: YearMonth): MonthlyConfig {
         return MonthlyConfig(
             yearMonth = yearMonth,
-            hourlyRate = 0.0,
+            hourlyRate = ZeroDecimal,
             rateSource = HourlyRateSource.MANUAL,
-            weekdayRate = 1.5,
-            restDayRate = 2.0,
-            holidayRate = 3.0,
+            weekdayRate = BigDecimal("1.50"),
+            restDayRate = BigDecimal("2.00"),
+            holidayRate = BigDecimal("3.00"),
             lockedByUser = false,
         )
     }

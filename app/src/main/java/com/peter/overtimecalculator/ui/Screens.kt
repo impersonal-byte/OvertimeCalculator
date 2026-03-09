@@ -3,6 +3,8 @@ package com.peter.overtimecalculator.ui
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -59,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -76,7 +79,10 @@ import com.peter.overtimecalculator.domain.DayCellUiState
 import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.HolidayCalendar
 import com.peter.overtimecalculator.domain.HourlyRateSource
+import com.peter.overtimecalculator.domain.ZeroDecimal
+import com.peter.overtimecalculator.domain.toDisplayString
 import com.peter.overtimecalculator.domain.UpdateUiState
+import com.peter.overtimecalculator.ui.CalendarStartDay
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -96,34 +102,44 @@ private enum class HourlyRateInputMode(val label: String) {
 
 private const val DurationStepMinutes = 30
 private const val MaxOvertimeMinutes = 16 * 60
-private val DurationPresetsMinutes = listOf(30, 60, 90, 120, 180, 240, 360, 480, 600, 720, 840, 960)
+private const val MinCompMinutes = -8 * 60
+private val PositiveDurationPresetsMinutes = listOf(30, 60, 90, 120, 180, 240, 360, 480, 600, 720, 840, 960)
+private val NegativeDurationPresetsMinutes = listOf(-30, -60, -120, -240, -480)
+private val DurationPresetsMinutes = PositiveDurationPresetsMinutes
 
 @Composable
-fun OvertimeCalculatorApp(viewModel: OvertimeViewModel) {
+fun OvertimeCalculatorApp(
+    viewModel: OvertimeViewModel,
+    appUpdateViewModel: AppUpdateViewModel,
+) {
     val navController = rememberNavController()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val updateUiState by appUpdateViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val tickHaptic = rememberTickHapticFeedback()
     val lifecycleOwner = LocalLifecycleOwner.current
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: HomeRoute
 
-    LaunchedEffect(uiState.message) {
-        val message = uiState.message ?: return@LaunchedEffect
+    LaunchedEffect(updateUiState.message) {
+        val message = updateUiState.message ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(message)
-        viewModel.clearMessage()
+        appUpdateViewModel.clearMessage()
     }
 
-    LaunchedEffect(uiState.feedbackSignal) {
-        if (uiState.feedbackSignal > 0L) {
-            tickHaptic.performTick()
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+                UiEvent.TriggerHaptic -> tickHaptic.performTick()
+            }
         }
     }
 
-    DisposableEffect(lifecycleOwner, viewModel) {
+    DisposableEffect(lifecycleOwner, appUpdateViewModel) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.onHostResumed()
+                appUpdateViewModel.onHostResumed()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -159,10 +175,12 @@ fun OvertimeCalculatorApp(viewModel: OvertimeViewModel) {
             composable(SettingsRoute) {
                 SettingsScreen(
                     uiState = uiState,
+                    updateUiState = updateUiState,
                     onSaveHourlyRate = viewModel::updateManualHourlyRate,
                     onSaveMultipliers = viewModel::updateMultipliers,
                     onReverseEngineer = viewModel::reverseEngineerHourlyRate,
-                    onCheckForUpdates = viewModel::checkForUpdates,
+                    onCheckForUpdates = appUpdateViewModel::checkForUpdates,
+                    onCalendarStartDayChange = viewModel::updateCalendarStartDay,
                     onModeSwitch = tickHaptic::performTick,
                 )
             }
@@ -170,7 +188,7 @@ fun OvertimeCalculatorApp(viewModel: OvertimeViewModel) {
     }
 
     uiState.editor?.let { editor ->
-        DayEditorSheet(
+        CompTimeDayEditorSheet(
             editor = editor,
             resolvedDayType = uiState.dayCells.firstOrNull { it.date == editor.date }?.dayType ?: DayType.WORKDAY,
             onDismiss = viewModel::dismissEditor,
@@ -241,6 +259,7 @@ private fun HomeScreen(
         CalendarGrid(
             selectedMonth = uiState.selectedMonth,
             dayCells = displayedCells,
+            calendarStartDay = uiState.calendarStartDay,
             onDayClick = onDayClick,
             modifier = Modifier.weight(1f),
         )
@@ -271,7 +290,7 @@ private fun SummaryCard(uiState: AppUiState) {
                 )
             }
             Text(
-                "¥${"%.2f".format(uiState.summary.totalPay)}",
+                "¥${uiState.summary.totalPay.toDisplayString()}",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Black,
                 modifier = Modifier.testTag("summary_total_pay"),
@@ -283,10 +302,17 @@ private fun SummaryCard(uiState: AppUiState) {
                         HourlyRateSource.MANUAL -> "当前时薪·手动"
                         HourlyRateSource.REVERSE_ENGINEERED -> "当前时薪·反推"
                     },
-                    value = "¥${"%.2f".format(uiState.config.hourlyRate)}",
+                    value = "¥${uiState.config.hourlyRate.toDisplayString()}",
                 )
             }
-            if (uiState.config.hourlyRate <= 0.0) {
+            if (uiState.summary.uncoveredCompMinutes > 0) {
+                Text(
+                    text = "本月调休已超过加班余额，超出 ${formatStepperDuration(uiState.summary.uncoveredCompMinutes)} 暂未计入金额，请按公司规则处理。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+            if (uiState.config.hourlyRate <= ZeroDecimal) {
                 Text(
                     text = "时薪未设置，请到设置页录入或反推。",
                     style = MaterialTheme.typography.bodySmall,
@@ -342,12 +368,16 @@ private fun MonthSwitcher(
 private fun CalendarGrid(
     selectedMonth: YearMonth,
     dayCells: List<DayCellUiState>,
+    calendarStartDay: CalendarStartDay,
     onDayClick: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dayMap = remember(dayCells) { dayCells.associateBy { it.date } }
     val presentationMap = remember(dayCells) { buildCalendarCellPresentations(dayCells) }
-    val leadingBlanks = remember(selectedMonth) { selectedMonth.atDay(1).dayOfWeek.toCalendarOffset() }
+    val today = remember { LocalDate.now() }
+    val leadingBlanks = remember(selectedMonth, calendarStartDay) {
+        selectedMonth.atDay(1).dayOfWeek.toCalendarOffset(calendarStartDay)
+    }
     val totalCells = leadingBlanks + selectedMonth.lengthOfMonth()
     val trailingBlanks = if (totalCells % 7 == 0) 0 else 7 - (totalCells % 7)
     val slots = remember(selectedMonth, dayCells, leadingBlanks, trailingBlanks) {
@@ -364,7 +394,7 @@ private fun CalendarGrid(
         modifier = modifier.testTag("calendar_grid"),
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            listOf("一", "二", "三", "四", "五", "六", "日").forEach { label ->
+            dayOfWeekLabels(calendarStartDay).forEach { label ->
                 Text(
                     label,
                     modifier = Modifier.weight(1f),
@@ -394,6 +424,8 @@ private fun CalendarGrid(
                                     DayCard(
                                         cell = dayMap.getValue(date),
                                         presentation = presentationMap.getValue(date),
+                                        isToday = date == today,
+                                        isFuture = date.isAfter(today),
                                         onClick = { onDayClick(date) },
                                         modifier = Modifier.fillMaxSize(),
                                     )
@@ -411,10 +443,14 @@ private fun CalendarGrid(
 private fun DayCard(
     cell: DayCellUiState,
     presentation: CalendarCellPresentation,
+    isToday: Boolean,
+    isFuture: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = dayCardColors(presentation)
+    val borderColor = if (isToday) MaterialTheme.colorScheme.primary else colors.border
+    val borderWidth = if (isToday) 2.dp else 1.dp
 
     Surface(
         color = colors.container,
@@ -422,9 +458,10 @@ private fun DayCard(
         shape = RoundedCornerShape(20.dp),
         tonalElevation = if (presentation.tier == CalendarCellIntensityTier.NONE) 1.dp else 3.dp,
         modifier = modifier
+            .alpha(if (isFuture) 0.56f else 1f)
             .testTag("day_card_${cell.date}")
-            .clickable(onClick = onClick)
-            .border(1.dp, colors.border, RoundedCornerShape(20.dp))
+            .clickable(enabled = !isFuture, onClick = onClick)
+            .border(borderWidth, borderColor, RoundedCornerShape(20.dp))
             .semantics(mergeDescendants = true) {},
     ) {
         Column(
@@ -476,6 +513,13 @@ private fun dayCardColors(presentation: CalendarCellPresentation): DayCardColors
             container = scheme.surface,
             content = scheme.onSurface,
             border = scheme.outlineVariant,
+        )
+        CalendarCellColorRole.COMP_TIME -> layeredColors(
+            tier = presentation.tier,
+            base = scheme.surface,
+            target = scheme.surfaceVariant,
+            content = scheme.onSurfaceVariant,
+            border = scheme.outline,
         )
         CalendarCellColorRole.WORKDAY_OVERTIME -> layeredColors(
             tier = presentation.tier,
@@ -686,6 +730,188 @@ private fun DayEditorSheet(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun CompTimeDayEditorSheet(
+    editor: DayEditorUiState,
+    resolvedDayType: DayType,
+    onDismiss: () -> Unit,
+    onSave: (Int, DayType?) -> Unit,
+) {
+    var overrideType by rememberSaveable(editor.date) { mutableStateOf(editor.currentOverride?.name ?: "") }
+    val effectiveDayType = overrideType.takeIf { it.isNotBlank() }?.let(DayType::valueOf) ?: resolvedDayType
+    val minMinutes = minAllowedMinutes(effectiveDayType)
+    var totalMinutes by rememberSaveable(editor.date) {
+        mutableStateOf(roundSignedToNearestHalfHour(editor.currentMinutes, minMinutes))
+    }
+
+    LaunchedEffect(minMinutes) {
+        totalMinutes = totalMinutes.coerceIn(minMinutes, MaxOvertimeMinutes)
+    }
+
+    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.testTag("day_editor_sheet")) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = editor.date.format(DateTimeFormatter.ofPattern("M 月 d 日 EEEE", Locale.CHINA)),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Surface(
+                tonalElevation = 1.dp,
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("duration_stepper"),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text("工时调整", style = MaterialTheme.typography.titleMedium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        DurationStepperButton(
+                            label = "-",
+                            enabled = totalMinutes > minMinutes,
+                            tag = "decrease_duration",
+                        ) {
+                            totalMinutes = adjustSignedDurationMinutes(totalMinutes, -DurationStepMinutes, minMinutes)
+                        }
+                        Text(
+                            text = formatStepperDuration(totalMinutes),
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("editor_duration_value"),
+                        )
+                        DurationStepperButton(
+                            label = "+",
+                            enabled = totalMinutes < MaxOvertimeMinutes,
+                            tag = "increase_duration",
+                        ) {
+                            totalMinutes = adjustSignedDurationMinutes(totalMinutes, DurationStepMinutes, minMinutes)
+                        }
+                    }
+                    Text(
+                        text = when {
+                            totalMinutes < 0 -> "当前为调休申请，将优先抵扣本月工作日加班"
+                            effectiveDayType == DayType.WORKDAY -> "工作日支持 -8.0h 到 16.0h，负值表示调休。"
+                            else -> "当前类型仅支持 0.0h 到 16.0h。"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(
+                            onClick = { totalMinutes = 0 },
+                            modifier = Modifier.testTag("clear_duration"),
+                        ) {
+                            Text("清零")
+                        }
+                    }
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (effectiveDayType == DayType.WORKDAY) {
+                            NegativeDurationPresetsMinutes.forEach { presetMinutes ->
+                                PresetDurationChip(
+                                    label = formatStepperDuration(presetMinutes),
+                                    selected = totalMinutes == presetMinutes,
+                                    tag = "preset_${presetMinutes}",
+                                ) {
+                                    totalMinutes = presetMinutes
+                                }
+                            }
+                        }
+                        PositiveDurationPresetsMinutes.forEach { presetMinutes ->
+                            PresetDurationChip(
+                                label = formatStepperDuration(presetMinutes),
+                                selected = totalMinutes == presetMinutes,
+                                tag = "preset_${presetMinutes}",
+                            ) {
+                                totalMinutes = presetMinutes
+                            }
+                        }
+                    }
+                }
+            }
+            Surface(
+                tonalElevation = 1.dp,
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "系统判定",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = dayTypeLabel(resolvedDayType),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Text(
+                        text = "日期类型覆盖",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        OverrideChip("跟随系统", overrideType.isBlank()) { overrideType = "" }
+                        DayType.entries.forEach { type ->
+                            OverrideChip(dayTypeLabel(type), overrideType == type.name) { overrideType = type.name }
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        TextButton(onClick = onDismiss) { Text("取消") }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                onSave(totalMinutes, overrideType.takeIf { it.isNotBlank() }?.let(DayType::valueOf))
+                            },
+                            modifier = Modifier.testTag("editor_save"),
+                        ) {
+                            Text("保存")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun OverrideChip(label: String, selected: Boolean, onClick: () -> Unit) {
     FilterChip(selected = selected, onClick = onClick, label = { Text(label) })
@@ -769,10 +995,12 @@ private fun MultiplierBadge(label: String, value: String) {
 @Composable
 private fun SettingsScreen(
     uiState: AppUiState,
+    updateUiState: AppUpdateUiState,
     onSaveHourlyRate: (String) -> Unit,
     onSaveMultipliers: (String, String, String) -> Unit,
     onReverseEngineer: (String) -> Unit,
     onCheckForUpdates: () -> Unit,
+    onCalendarStartDayChange: (CalendarStartDay) -> Unit,
     onModeSwitch: () -> Unit,
 ) {
     var selectedModeName by rememberSaveable(uiState.config.yearMonth, uiState.config.rateSource) {
@@ -781,16 +1009,16 @@ private fun SettingsScreen(
     val selectedMode = HourlyRateInputMode.valueOf(selectedModeName)
 
     var hourlyRateText by rememberSaveable(uiState.config.yearMonth, uiState.config.hourlyRate) {
-        mutableStateOf(if (uiState.config.hourlyRate == 0.0) "" else "%.2f".format(uiState.config.hourlyRate))
+        mutableStateOf(if (uiState.config.hourlyRate == ZeroDecimal) "" else uiState.config.hourlyRate.toDisplayString())
     }
     var weekdayRateText by rememberSaveable(uiState.config.yearMonth, uiState.config.weekdayRate) {
-        mutableStateOf("%.2f".format(uiState.config.weekdayRate))
+        mutableStateOf(uiState.config.weekdayRate.toDisplayString())
     }
     var restDayRateText by rememberSaveable(uiState.config.yearMonth, uiState.config.restDayRate) {
-        mutableStateOf("%.2f".format(uiState.config.restDayRate))
+        mutableStateOf(uiState.config.restDayRate.toDisplayString())
     }
     var holidayRateText by rememberSaveable(uiState.config.yearMonth, uiState.config.holidayRate) {
-        mutableStateOf("%.2f".format(uiState.config.holidayRate))
+        mutableStateOf(uiState.config.holidayRate.toDisplayString())
     }
     var reversePayText by rememberSaveable(uiState.config.yearMonth) { mutableStateOf("") }
     var showMultiplierSheet by rememberSaveable { mutableStateOf(false) }
@@ -920,21 +1148,49 @@ private fun SettingsScreen(
             }
         }
         item {
+            SettingCard("日历显示", "选择日历每周的起始日。") {
+                SingleChoiceSegmentedButtonRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("calendar_start_day_row"),
+                ) {
+                    CalendarStartDay.entries.forEachIndexed { index, option ->
+                        SegmentedButton(
+                            selected = uiState.calendarStartDay == option,
+                            onClick = { onCalendarStartDayChange(option) },
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = CalendarStartDay.entries.size,
+                            ),
+                        ) {
+                            Text(
+                                if (option == CalendarStartDay.MONDAY) {
+                                    "周一为首日"
+                                } else {
+                                    "周日为首日"
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        item {
             SettingCard("检查更新", "从 GitHub 最新正式版本检查并下载更新。") {
                 Text(
-                    text = "当前版本：${uiState.currentVersionName}",
+                    text = "当前版本：${updateUiState.currentVersionName}",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.testTag("current_version_text"),
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = updateStatusLabel(uiState.updateState, uiState.awaitingInstallPermission),
+                    text = updateStatusLabel(updateUiState.updateState, updateUiState.awaitingInstallPermission),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.testTag("update_status_text"),
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                val isUpdateInProgress = uiState.updateState is UpdateUiState.Checking ||
-                    uiState.updateState is UpdateUiState.Downloading
+                val isUpdateInProgress = updateUiState.updateState is UpdateUiState.Checking ||
+                    updateUiState.updateState is UpdateUiState.Downloading
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -968,7 +1224,7 @@ private fun SettingsScreen(
         item {
             SettingCard("节假日说明", "优先级：手动覆盖 > 内置节假日/调休 > 周末 > 普通工作日。") {
                 Text(
-                    "当前内置 2026-2030 节假日与调休日数据；超出范围时自动回退为周末规则。任何一天都可以在首页录入时手动覆盖类型。",
+                    "应用内置节假日基线数据，并会通过 Timor 中国节假日 API 静默刷新当前年和下一年规则；当远端无有效数据时，会自动回退到内置基线与周末规则。任何一天都可以在首页录入时手动覆盖类型。",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -1090,14 +1346,33 @@ private fun updateStatusLabel(updateState: UpdateUiState, awaitingInstallPermiss
     }
 }
 
-private fun DayOfWeek.toCalendarOffset(): Int = when (this) {
-    DayOfWeek.MONDAY -> 0
-    DayOfWeek.TUESDAY -> 1
-    DayOfWeek.WEDNESDAY -> 2
-    DayOfWeek.THURSDAY -> 3
-    DayOfWeek.FRIDAY -> 4
-    DayOfWeek.SATURDAY -> 5
-    DayOfWeek.SUNDAY -> 6
+private fun DayOfWeek.toCalendarOffset(calendarStartDay: CalendarStartDay): Int = when (calendarStartDay) {
+    CalendarStartDay.MONDAY -> when (this) {
+        DayOfWeek.MONDAY -> 0
+        DayOfWeek.TUESDAY -> 1
+        DayOfWeek.WEDNESDAY -> 2
+        DayOfWeek.THURSDAY -> 3
+        DayOfWeek.FRIDAY -> 4
+        DayOfWeek.SATURDAY -> 5
+        DayOfWeek.SUNDAY -> 6
+    }
+    CalendarStartDay.SUNDAY -> when (this) {
+        DayOfWeek.SUNDAY -> 0
+        DayOfWeek.MONDAY -> 1
+        DayOfWeek.TUESDAY -> 2
+        DayOfWeek.WEDNESDAY -> 3
+        DayOfWeek.THURSDAY -> 4
+        DayOfWeek.FRIDAY -> 5
+        DayOfWeek.SATURDAY -> 6
+    }
+}
+
+private fun dayOfWeekLabels(calendarStartDay: CalendarStartDay): List<String> {
+    return if (calendarStartDay == CalendarStartDay.MONDAY) {
+        listOf("一", "二", "三", "四", "五", "六", "日")
+    } else {
+        listOf("日", "一", "二", "三", "四", "五", "六")
+    }
 }
 
 private fun dayTypeLabel(type: DayType): String = when (type) {
@@ -1106,19 +1381,39 @@ private fun dayTypeLabel(type: DayType): String = when (type) {
     DayType.HOLIDAY -> "节假日"
 }
 
-private fun formatMinutes(totalMinutes: Int): String = "${totalMinutes / 60}h ${totalMinutes % 60}m"
+private fun formatMinutes(totalMinutes: Int): String {
+    val sign = if (totalMinutes < 0) "-" else ""
+    val absoluteMinutes = kotlin.math.abs(totalMinutes)
+    return "$sign${absoluteMinutes / 60}h ${absoluteMinutes % 60}m"
+}
 
 private fun formatStepperDuration(totalMinutes: Int): String {
     return String.format(Locale.US, "%.1fh", totalMinutes / 60.0)
 }
 
 private fun roundToNearestHalfHour(totalMinutes: Int): Int {
-    return (((totalMinutes + 15) / DurationStepMinutes) * DurationStepMinutes)
-        .coerceIn(0, MaxOvertimeMinutes)
+    return roundSignedToNearestHalfHour(totalMinutes, minMinutes = 0)
+}
+
+private fun roundSignedToNearestHalfHour(totalMinutes: Int, minMinutes: Int): Int {
+    val rounded = if (totalMinutes >= 0) {
+        ((totalMinutes + 15) / DurationStepMinutes) * DurationStepMinutes
+    } else {
+        -(((kotlin.math.abs(totalMinutes) + 15) / DurationStepMinutes) * DurationStepMinutes)
+    }
+    return rounded.coerceIn(minMinutes, MaxOvertimeMinutes)
 }
 
 private fun adjustDurationMinutes(currentMinutes: Int, deltaMinutes: Int): Int {
-    return (currentMinutes + deltaMinutes).coerceIn(0, MaxOvertimeMinutes)
+    return adjustSignedDurationMinutes(currentMinutes, deltaMinutes, minMinutes = 0)
+}
+
+private fun adjustSignedDurationMinutes(currentMinutes: Int, deltaMinutes: Int, minMinutes: Int): Int {
+    return (currentMinutes + deltaMinutes).coerceIn(minMinutes, MaxOvertimeMinutes)
+}
+
+private fun minAllowedMinutes(dayType: DayType): Int {
+    return if (dayType == DayType.WORKDAY) MinCompMinutes else 0
 }
 
 private fun String.filterAllowedDecimal(): String {
@@ -1134,7 +1429,7 @@ private fun buildPlaceholderCells(selectedMonth: YearMonth): List<DayCellUiState
             date = date,
             overtimeMinutes = 0,
             dayType = placeholderHolidayCalendar.resolveDayType(date, null),
-            pay = 0.0,
+            pay = ZeroDecimal,
         )
     }
 }

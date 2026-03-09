@@ -1,5 +1,6 @@
 package com.peter.overtimecalculator.domain
 
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -16,11 +17,11 @@ enum class HourlyRateSource {
 
 data class MonthlyConfig(
     val yearMonth: YearMonth,
-    val hourlyRate: Double,
+    val hourlyRate: BigDecimal,
     val rateSource: HourlyRateSource,
-    val weekdayRate: Double,
-    val restDayRate: Double,
-    val holidayRate: Double,
+    val weekdayRate: BigDecimal,
+    val restDayRate: BigDecimal,
+    val holidayRate: BigDecimal,
     val lockedByUser: Boolean,
 )
 
@@ -28,21 +29,24 @@ data class DayCellUiState(
     val date: LocalDate,
     val overtimeMinutes: Int,
     val dayType: DayType,
-    val pay: Double,
+    val pay: BigDecimal,
 )
 
 data class MonthlySummaryUiState(
     val totalMinutes: Int,
-    val totalPay: Double,
+    val totalPay: BigDecimal,
     val yearMonth: YearMonth,
-    val hourlyRate: Double,
+    val hourlyRate: BigDecimal,
     val rateSource: HourlyRateSource,
+    val uncoveredCompMinutes: Int = 0,
+    val grossOvertimeMinutes: Int = 0,
+    val compMinutes: Int = 0,
 )
 
 data class ReverseRateResult(
-    val hourlyRate: Double,
-    val weightedHours: Double,
-    val overtimePayInput: Double,
+    val hourlyRate: BigDecimal,
+    val weightedHours: BigDecimal,
+    val overtimePayInput: BigDecimal,
 )
 
 data class ObservedMonth(
@@ -52,4 +56,3 @@ data class ObservedMonth(
     val entryMinutesByDate: Map<LocalDate, Int>,
     val overrideTypesByDate: Map<LocalDate, DayType>,
 )
-

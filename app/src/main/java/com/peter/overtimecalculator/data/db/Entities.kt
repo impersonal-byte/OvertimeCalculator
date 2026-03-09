@@ -5,17 +5,18 @@ import androidx.room.PrimaryKey
 import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.HourlyRateSource
 import com.peter.overtimecalculator.domain.MonthlyConfig
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
 
 @Entity(tableName = "monthly_config")
 data class MonthlyConfigEntity(
     @PrimaryKey val yearMonth: String,
-    val hourlyRate: Double,
+    val hourlyRate: BigDecimal,
     val rateSource: HourlyRateSource,
-    val weekdayRate: Double,
-    val restDayRate: Double,
-    val holidayRate: Double,
+    val weekdayRate: BigDecimal,
+    val restDayRate: BigDecimal,
+    val holidayRate: BigDecimal,
     val lockedByUser: Boolean,
 )
 
@@ -54,4 +55,3 @@ fun MonthlyConfig.toEntity(): MonthlyConfigEntity = MonthlyConfigEntity(
 fun OvertimeEntryEntity.toPair(): Pair<LocalDate, Int> = LocalDate.parse(date) to minutes
 
 fun HolidayOverrideEntity.toPair(): Pair<LocalDate, DayType> = LocalDate.parse(date) to dayType
-
