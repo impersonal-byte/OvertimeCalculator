@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/impersonal-byte/OvertimeCalculator/releases/tag/v1.1.0">下载 v1.1.0</a>
+  <a href="https://github.com/impersonal-byte/OvertimeCalculator/releases/tag/v1.2.0">下载 v1.2.0</a>
   ·
   <a href="#功能亮点">功能亮点</a>
   ·
