@@ -12,13 +12,13 @@ import com.peter.overtimecalculator.domain.MonthlyConfig
 import com.peter.overtimecalculator.domain.MonthlySummaryUiState
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 
 data class DayEditorUiState(
@@ -34,6 +34,7 @@ data class AppUiState(
     val config: MonthlyConfig,
     val editor: DayEditorUiState? = null,
     val message: String? = null,
+    val feedbackSignal: Long = 0L,
 ) {
     companion object {
         fun empty(): AppUiState {
@@ -69,6 +70,7 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
     private val selectedMonth = MutableStateFlow(YearMonth.now())
     private val selectedEditorDate = MutableStateFlow<LocalDate?>(null)
     private val message = MutableStateFlow<String?>(null)
+    private val feedbackSignal = MutableStateFlow(0L)
 
     private val observedMonth = selectedMonth
         .flatMapLatest(repository::observeMonth)
@@ -79,9 +81,14 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
         observedMonth,
         selectedEditorDate,
         message,
-    ) { month, observed, editorDate, snackbar ->
+        feedbackSignal,
+    ) { month, observed, editorDate, snackbar, tickSignal ->
         if (observed == null) {
-            AppUiState.empty().copy(selectedMonth = month, message = snackbar)
+            AppUiState.empty().copy(
+                selectedMonth = month,
+                message = snackbar,
+                feedbackSignal = tickSignal,
+            )
         } else {
             AppUiState(
                 selectedMonth = month,
@@ -96,6 +103,7 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
                     )
                 },
                 message = snackbar,
+                feedbackSignal = tickSignal,
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppUiState.empty())
@@ -140,6 +148,7 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
                 repository.saveOvertime(date, hours * 60 + minutes, overrideDayType)
             }.onSuccess {
                 selectedEditorDate.value = null
+                emitFeedback()
             }.onFailure {
                 message.value = it.message ?: "保存失败"
             }
@@ -153,6 +162,7 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
                 "已保存时薪"
             }.onSuccess {
                 message.value = it
+                emitFeedback()
             }.onFailure {
                 message.value = it.message ?: "保存时薪失败"
             }
@@ -171,6 +181,7 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
                 "已保存倍率"
             }.onSuccess {
                 message.value = it
+                emitFeedback()
             }.onFailure {
                 message.value = it.message ?: "保存倍率失败"
             }
@@ -187,6 +198,7 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
                 "反推时薪 ¥${"%.2f".format(result.hourlyRate)}，加权工时 ${"%.2f".format(result.weightedHours)}h"
             }.onSuccess {
                 message.value = it
+                emitFeedback()
             }.onFailure {
                 message.value = it.message ?: "反推时薪失败"
             }
@@ -197,6 +209,10 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             repository.ensureMonthExists(month)
         }
+    }
+
+    private fun emitFeedback() {
+        feedbackSignal.value += 1
     }
 
     companion object {

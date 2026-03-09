@@ -1,6 +1,5 @@
 package com.peter.overtimecalculator.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,10 +13,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -38,6 +35,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -53,7 +53,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -66,8 +69,6 @@ import com.peter.overtimecalculator.domain.DayCellUiState
 import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.HolidayCalendar
 import com.peter.overtimecalculator.domain.HourlyRateSource
-import com.peter.overtimecalculator.ui.theme.ClayAccent
-import com.peter.overtimecalculator.ui.theme.ClayPrimary
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -77,12 +78,19 @@ import java.util.Locale
 private const val HomeRoute = "home"
 private const val SettingsRoute = "settings"
 private val placeholderHolidayCalendar = HolidayCalendar()
+private val monthFormatter = DateTimeFormatter.ofPattern("yyyy 年 M 月", Locale.CHINA)
+
+private enum class HourlyRateInputMode(val label: String) {
+    MANUAL("手动输入"),
+    REVERSE("总额反推"),
+}
 
 @Composable
 fun OvertimeCalculatorApp(viewModel: OvertimeViewModel) {
     val navController = rememberNavController()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val tickHaptic = rememberTickHapticFeedback()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: HomeRoute
 
@@ -90,6 +98,12 @@ fun OvertimeCalculatorApp(viewModel: OvertimeViewModel) {
         val message = uiState.message ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(message)
         viewModel.clearMessage()
+    }
+
+    LaunchedEffect(uiState.feedbackSignal) {
+        if (uiState.feedbackSignal > 0L) {
+            tickHaptic.performTick()
+        }
     }
 
     Scaffold(
@@ -122,6 +136,7 @@ fun OvertimeCalculatorApp(viewModel: OvertimeViewModel) {
                     onSaveHourlyRate = viewModel::updateManualHourlyRate,
                     onSaveMultipliers = viewModel::updateMultipliers,
                     onReverseEngineer = viewModel::reverseEngineerHourlyRate,
+                    onModeSwitch = tickHaptic::performTick,
                 )
             }
         }
@@ -150,10 +165,10 @@ private fun AppTopBar(
     TopAppBar(
         title = {
             Text(
-                if (currentRoute == HomeRoute) {
+                text = if (currentRoute == HomeRoute) {
                     "加班工资计算器"
                 } else {
-                    "${selectedMonth.format(DateTimeFormatter.ofPattern("yyyy 年 M 月"))}设置"
+                    "${selectedMonth.format(monthFormatter)}设置"
                 },
             )
         },
@@ -215,10 +230,13 @@ private fun SummaryCard(uiState: AppUiState) {
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 Icon(Icons.Default.CalendarMonth, contentDescription = null)
                 Text(
-                    uiState.selectedMonth.format(DateTimeFormatter.ofPattern("yyyy 年 M 月")),
+                    uiState.selectedMonth.format(monthFormatter),
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
@@ -235,11 +253,12 @@ private fun SummaryCard(uiState: AppUiState) {
             AssistChip(
                 onClick = {},
                 enabled = false,
+                modifier = Modifier.testTag("rate_source_chip"),
                 label = {
                     Text(
                         when (uiState.config.rateSource) {
                             HourlyRateSource.MANUAL -> "时薪来源：手动输入"
-                            HourlyRateSource.REVERSE_ENGINEERED -> "时薪来源：工资反推"
+                            HourlyRateSource.REVERSE_ENGINEERED -> "时薪来源：总额反推"
                         },
                     )
                 },
@@ -250,7 +269,7 @@ private fun SummaryCard(uiState: AppUiState) {
             )
             if (uiState.config.hourlyRate <= 0.0) {
                 Text(
-                    text = "当前时薪为 0，请先到设置页手动录入或用已发加班工资反推时薪。",
+                    text = "当前时薪为 0，请先到设置页手动输入，或根据已发加班工资总额进行反推。",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
@@ -273,7 +292,11 @@ private fun MonthSwitcher(
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
 ) {
-    Surface(tonalElevation = 2.dp, shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        tonalElevation = 2.dp,
+        shape = RoundedCornerShape(24.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -285,7 +308,7 @@ private fun MonthSwitcher(
                 Icon(Icons.Default.ChevronLeft, contentDescription = "上个月")
             }
             Text(
-                selectedMonth.format(DateTimeFormatter.ofPattern("yyyy 年 M 月")),
+                selectedMonth.format(monthFormatter),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
@@ -303,6 +326,7 @@ private fun CalendarGrid(
     onDayClick: (LocalDate) -> Unit,
 ) {
     val dayMap = remember(dayCells) { dayCells.associateBy { it.date } }
+    val presentationMap = remember(dayCells) { buildCalendarCellPresentations(dayCells) }
     val leadingBlanks = remember(selectedMonth) { selectedMonth.atDay(1).dayOfWeek.toCalendarOffset() }
     val totalCells = leadingBlanks + selectedMonth.lengthOfMonth()
     val trailingBlanks = if (totalCells % 7 == 0) 0 else 7 - (totalCells % 7)
@@ -334,7 +358,11 @@ private fun CalendarGrid(
                         if (date == null) {
                             Spacer(modifier = Modifier.fillMaxWidth().aspectRatio(0.86f))
                         } else {
-                            DayCard(dayMap.getValue(date)) { onDayClick(date) }
+                            DayCard(
+                                cell = dayMap.getValue(date),
+                                presentation = presentationMap.getValue(date),
+                                onClick = { onDayClick(date) },
+                            )
                         }
                     }
                 }
@@ -344,54 +372,126 @@ private fun CalendarGrid(
 }
 
 @Composable
-private fun DayCard(cell: DayCellUiState, onClick: () -> Unit) {
-    val accent = when (cell.dayType) {
-        DayType.WORKDAY -> MaterialTheme.colorScheme.primary
-        DayType.REST_DAY -> MaterialTheme.colorScheme.secondary
-        DayType.HOLIDAY -> ClayAccent
-    }
+private fun DayCard(
+    cell: DayCellUiState,
+    presentation: CalendarCellPresentation,
+    onClick: () -> Unit,
+) {
+    val colors = dayCardColors(presentation)
 
     Surface(
+        color = colors.container,
+        contentColor = colors.content,
         shape = RoundedCornerShape(20.dp),
-        tonalElevation = 2.dp,
+        tonalElevation = if (presentation.tier == CalendarCellIntensityTier.NONE) 1.dp else 3.dp,
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(0.86f)
             .testTag("day_card_${cell.date}")
             .clickable(onClick = onClick)
-            .border(1.dp, accent.copy(alpha = 0.2f), RoundedCornerShape(20.dp)),
+            .border(1.dp, colors.border, RoundedCornerShape(20.dp))
+            .semantics(mergeDescendants = true) {},
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp),
+                .padding(horizontal = 10.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Row(
+            Text(
+                text = cell.date.dayOfMonth.toString(),
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge,
+                color = if (presentation.tier == CalendarCellIntensityTier.NONE) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    colors.content
+                },
+            )
+            Box(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                contentAlignment = Alignment.BottomCenter,
             ) {
-                Text(cell.date.dayOfMonth.toString(), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                Box(modifier = Modifier.size(8.dp).background(accent, CircleShape))
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(dayTypeLabel(cell.dayType), style = MaterialTheme.typography.labelSmall, color = accent)
-                Text(
-                    if (cell.overtimeMinutes > 0) formatMinutes(cell.overtimeMinutes) else "未记录",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    if (cell.pay > 0) "¥${"%.0f".format(cell.pay)}" else "¥0",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (cell.pay > 0) ClayPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Bold,
-                )
+                if (presentation.hoursLabel.isNotBlank()) {
+                    Text(
+                        text = presentation.hoursLabel,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = colors.content,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                    )
+                } else {
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
             }
         }
     }
 }
+
+@Composable
+private fun dayCardColors(presentation: CalendarCellPresentation): DayCardColors {
+    val scheme = MaterialTheme.colorScheme
+    return when (presentation.colorRole) {
+        CalendarCellColorRole.DEFAULT -> DayCardColors(
+            container = scheme.surface,
+            content = scheme.onSurface,
+            border = scheme.outlineVariant,
+        )
+        CalendarCellColorRole.WORKDAY_OVERTIME -> layeredColors(
+            tier = presentation.tier,
+            base = scheme.surface,
+            target = scheme.secondaryContainer,
+            content = scheme.onSecondaryContainer,
+            border = scheme.secondary,
+        )
+        CalendarCellColorRole.REST_DAY_OVERTIME -> layeredColors(
+            tier = presentation.tier,
+            base = scheme.surface,
+            target = scheme.primaryContainer,
+            content = scheme.onPrimaryContainer,
+            border = scheme.primary,
+        )
+        CalendarCellColorRole.HOLIDAY_OVERTIME -> layeredColors(
+            tier = presentation.tier,
+            base = scheme.surface,
+            target = scheme.errorContainer,
+            content = scheme.onErrorContainer,
+            border = scheme.error,
+        )
+        CalendarCellColorRole.HOLIDAY_OVERTIME_HIGH -> DayCardColors(
+            container = scheme.error,
+            content = scheme.onError,
+            border = scheme.error,
+        )
+    }
+}
+
+@Composable
+private fun layeredColors(
+    tier: CalendarCellIntensityTier,
+    base: Color,
+    target: Color,
+    content: Color,
+    border: Color,
+): DayCardColors {
+    val amount = when (tier) {
+        CalendarCellIntensityTier.NONE -> 0f
+        CalendarCellIntensityTier.LOW -> 0.42f
+        CalendarCellIntensityTier.MID -> 0.68f
+        CalendarCellIntensityTier.HIGH -> 0.92f
+    }
+    return DayCardColors(
+        container = lerp(base, target, amount),
+        content = if (amount >= 0.6f) content else MaterialTheme.colorScheme.onSurface,
+        border = lerp(MaterialTheme.colorScheme.outlineVariant, border, 0.75f),
+    )
+}
+
+private data class DayCardColors(
+    val container: Color,
+    val content: Color,
+    val border: Color,
+)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -403,7 +503,7 @@ private fun DayEditorSheet(
 ) {
     var hourText by rememberSaveable(editor.date) { mutableStateOf((editor.currentMinutes / 60).toString()) }
     var minuteText by rememberSaveable(editor.date) { mutableStateOf((editor.currentMinutes % 60).toString()) }
-    var overrideType by rememberSaveable(editor.date) { mutableStateOf(editor.currentOverride) }
+    var overrideType by rememberSaveable(editor.date) { mutableStateOf(editor.currentOverride?.name ?: "") }
 
     ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.testTag("day_editor_sheet")) {
         Column(
@@ -418,7 +518,7 @@ private fun DayEditorSheet(
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                "当前系统判定：${dayTypeLabel(resolvedDayType)}",
+                "系统判定：${dayTypeLabel(resolvedDayType)}",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -426,29 +526,38 @@ private fun DayEditorSheet(
                     value = hourText,
                     onValueChange = { hourText = it.filter(Char::isDigit) },
                     label = { Text("小时") },
-                    modifier = Modifier.weight(1f).testTag("editor_hours"),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("editor_hours"),
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = minuteText,
                     onValueChange = { minuteText = it.filter(Char::isDigit) },
                     label = { Text("分钟") },
-                    modifier = Modifier.weight(1f).testTag("editor_minutes"),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("editor_minutes"),
                     singleLine = true,
                 )
             }
             Text("日期类型覆盖", style = MaterialTheme.typography.titleMedium)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OverrideChip("跟随系统", overrideType == null) { overrideType = null }
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OverrideChip("跟随系统", overrideType.isBlank()) { overrideType = "" }
                 DayType.entries.forEach { type ->
-                    OverrideChip(dayTypeLabel(type), overrideType == type) { overrideType = type }
+                    OverrideChip(dayTypeLabel(type), overrideType == type.name) { overrideType = type.name }
                 }
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onDismiss) { Text("取消") }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
-                    onClick = { onSave(hourText, minuteText, overrideType) },
+                    onClick = {
+                        onSave(hourText, minuteText, overrideType.takeIf { it.isNotBlank() }?.let(DayType::valueOf))
+                    },
                     modifier = Modifier.testTag("editor_save"),
                 ) {
                     Text("保存")
@@ -470,20 +579,26 @@ private fun SettingsScreen(
     onSaveHourlyRate: (String) -> Unit,
     onSaveMultipliers: (String, String, String) -> Unit,
     onReverseEngineer: (String) -> Unit,
+    onModeSwitch: () -> Unit,
 ) {
-    var hourlyRateText by remember(uiState.config.yearMonth, uiState.config.hourlyRate) {
+    var selectedModeName by rememberSaveable(uiState.config.yearMonth, uiState.config.rateSource) {
+        mutableStateOf(uiState.config.rateSource.toInputMode().name)
+    }
+    val selectedMode = HourlyRateInputMode.valueOf(selectedModeName)
+
+    var hourlyRateText by rememberSaveable(uiState.config.yearMonth, uiState.config.hourlyRate) {
         mutableStateOf(if (uiState.config.hourlyRate == 0.0) "" else "%.2f".format(uiState.config.hourlyRate))
     }
-    var weekdayRateText by remember(uiState.config.yearMonth, uiState.config.weekdayRate) {
+    var weekdayRateText by rememberSaveable(uiState.config.yearMonth, uiState.config.weekdayRate) {
         mutableStateOf("%.2f".format(uiState.config.weekdayRate))
     }
-    var restDayRateText by remember(uiState.config.yearMonth, uiState.config.restDayRate) {
+    var restDayRateText by rememberSaveable(uiState.config.yearMonth, uiState.config.restDayRate) {
         mutableStateOf("%.2f".format(uiState.config.restDayRate))
     }
-    var holidayRateText by remember(uiState.config.yearMonth, uiState.config.holidayRate) {
+    var holidayRateText by rememberSaveable(uiState.config.yearMonth, uiState.config.holidayRate) {
         mutableStateOf("%.2f".format(uiState.config.holidayRate))
     }
-    var reversePayText by remember(uiState.config.yearMonth) { mutableStateOf("") }
+    var reversePayText by rememberSaveable(uiState.config.yearMonth) { mutableStateOf("") }
 
     LazyColumn(
         modifier = Modifier
@@ -494,25 +609,99 @@ private fun SettingsScreen(
     ) {
         item { Spacer(modifier = Modifier.height(4.dp)) }
         item {
-            SettingCard("时薪设置", "手动输入本月时薪；会作为之后未锁定月份的默认值") {
-                OutlinedTextField(
-                    value = hourlyRateText,
-                    onValueChange = { hourlyRateText = it.filterAllowedDecimal() },
-                    label = { Text("时薪（元/小时）") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().testTag("hourly_rate_input"),
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Button(
-                    onClick = { onSaveHourlyRate(hourlyRateText) },
-                    modifier = Modifier.testTag("save_hourly_rate"),
+            SettingCard("时薪控制中心", "在手动输入和总额反推之间切换，本月配置会随保存结果更新。") {
+                SingleChoiceSegmentedButtonRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("hourly_mode_row"),
                 ) {
-                    Text("保存时薪")
+                    HourlyRateInputMode.entries.forEachIndexed { index, mode ->
+                        SegmentedButton(
+                            selected = selectedMode == mode,
+                            onClick = {
+                                if (selectedMode != mode) {
+                                    selectedModeName = mode.name
+                                    onModeSwitch()
+                                }
+                            },
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = HourlyRateInputMode.entries.size,
+                            ),
+                            modifier = Modifier.testTag(
+                                if (mode == HourlyRateInputMode.MANUAL) {
+                                    "hourly_mode_manual"
+                                } else {
+                                    "hourly_mode_reverse"
+                                },
+                            ),
+                        ) {
+                            Text(mode.label)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                when (selectedMode) {
+                    HourlyRateInputMode.MANUAL -> {
+                        Column(
+                            modifier = Modifier.testTag("manual_hourly_panel"),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            OutlinedTextField(
+                                value = hourlyRateText,
+                                onValueChange = { hourlyRateText = it.filterAllowedDecimal() },
+                                label = { Text("时薪（元/小时）") },
+                                singleLine = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("hourly_rate_input"),
+                            )
+                            Button(
+                                onClick = { onSaveHourlyRate(hourlyRateText) },
+                                modifier = Modifier.testTag("save_hourly_rate"),
+                            ) {
+                                Text("保存时薪")
+                            }
+                        }
+                    }
+                    HourlyRateInputMode.REVERSE -> {
+                        Column(
+                            modifier = Modifier.testTag("reverse_panel"),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            OutlinedTextField(
+                                value = reversePayText,
+                                onValueChange = { reversePayText = it.filterAllowedDecimal() },
+                                label = { Text("已发加班工资总额") },
+                                singleLine = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("reverse_pay_input"),
+                            )
+                            Text(
+                                "时薪 = 总额 / Σ(每日工时 × 当日倍率)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.testTag("hourly_formula"),
+                            )
+                            Text(
+                                "当前月已录入 ${formatMinutes(uiState.summary.totalMinutes)}。若没有每日明细，反推会被阻止。",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Button(
+                                onClick = { onReverseEngineer(reversePayText) },
+                                modifier = Modifier.testTag("start_reverse"),
+                            ) {
+                                Text("保存并反推")
+                            }
+                        }
+                    }
                 }
             }
         }
         item {
-            SettingCard("倍率设置", "工作日 / 休息日 / 节假日的工资倍数") {
+            SettingCard("倍率设置", "工作日、休息日、节假日的加班工资倍率。") {
                 OutlinedTextField(
                     value = weekdayRateText,
                     onValueChange = { weekdayRateText = it.filterAllowedDecimal() },
@@ -543,33 +732,9 @@ private fun SettingsScreen(
             }
         }
         item {
-            SettingCard("反推时薪", "输入本月已发加班工资，系统会根据已录入的每日明细和倍率反推时薪") {
-                OutlinedTextField(
-                    value = reversePayText,
-                    onValueChange = { reversePayText = it.filterAllowedDecimal() },
-                    label = { Text("已发加班工资总额") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().testTag("reverse_pay_input"),
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+            SettingCard("节假日说明", "优先级：手动覆盖 > 内置节假日/调休 > 周末 > 普通工作日。") {
                 Text(
-                    "当前月已录入 ${formatMinutes(uiState.summary.totalMinutes)}。若没有每日明细，反推会被阻止。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Button(
-                    onClick = { onReverseEngineer(reversePayText) },
-                    modifier = Modifier.testTag("start_reverse"),
-                ) {
-                    Text("开始反推")
-                }
-            }
-        }
-        item {
-            SettingCard("节假日说明", "优先级：手动覆盖 > 内置节假日/调休 > 周末 > 普通工作日") {
-                Text(
-                    "内置 2026 年官方调休数据，并为 2027-2030 预留节假日日期；超出范围自动回退为周末规则。任何一天都可以在首页录入时手动覆盖类型。",
+                    "当前内置 2026-2030 节假日与调休日数据；超出范围时自动回退为周末规则。任何一天都可以在首页录入时手动覆盖类型。",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -589,6 +754,11 @@ private fun SettingCard(title: String, subtitle: String, content: @Composable ()
             content()
         }
     }
+}
+
+private fun HourlyRateSource.toInputMode(): HourlyRateInputMode = when (this) {
+    HourlyRateSource.MANUAL -> HourlyRateInputMode.MANUAL
+    HourlyRateSource.REVERSE_ENGINEERED -> HourlyRateInputMode.REVERSE
 }
 
 private fun DayOfWeek.toCalendarOffset(): Int = when (this) {
