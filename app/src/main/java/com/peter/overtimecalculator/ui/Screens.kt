@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +29,7 @@ import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -45,6 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,7 +64,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -69,6 +76,7 @@ import com.peter.overtimecalculator.domain.DayCellUiState
 import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.HolidayCalendar
 import com.peter.overtimecalculator.domain.HourlyRateSource
+import com.peter.overtimecalculator.domain.UpdateUiState
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -91,6 +99,7 @@ fun OvertimeCalculatorApp(viewModel: OvertimeViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val tickHaptic = rememberTickHapticFeedback()
+    val lifecycleOwner = LocalLifecycleOwner.current
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: HomeRoute
 
@@ -103,6 +112,18 @@ fun OvertimeCalculatorApp(viewModel: OvertimeViewModel) {
     LaunchedEffect(uiState.feedbackSignal) {
         if (uiState.feedbackSignal > 0L) {
             tickHaptic.performTick()
+        }
+    }
+
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.onHostResumed()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
@@ -136,6 +157,7 @@ fun OvertimeCalculatorApp(viewModel: OvertimeViewModel) {
                     onSaveHourlyRate = viewModel::updateManualHourlyRate,
                     onSaveMultipliers = viewModel::updateMultipliers,
                     onReverseEngineer = viewModel::reverseEngineerHourlyRate,
+                    onCheckForUpdates = viewModel::checkForUpdates,
                     onModeSwitch = tickHaptic::performTick,
                 )
             }
@@ -352,11 +374,14 @@ private fun CalendarGrid(
             }
         }
         slots.chunked(7).forEach { week ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 week.forEach { date ->
                     Box(modifier = Modifier.weight(1f)) {
                         if (date == null) {
-                            Spacer(modifier = Modifier.fillMaxWidth().aspectRatio(0.86f))
+                            Spacer(modifier = Modifier.fillMaxWidth().aspectRatio(0.9f))
                         } else {
                             DayCard(
                                 cell = dayMap.getValue(date),
@@ -386,7 +411,7 @@ private fun DayCard(
         tonalElevation = if (presentation.tier == CalendarCellIntensityTier.NONE) 1.dp else 3.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(0.86f)
+            .aspectRatio(0.9f)
             .testTag("day_card_${cell.date}")
             .clickable(onClick = onClick)
             .border(1.dp, colors.border, RoundedCornerShape(20.dp))
@@ -394,19 +419,22 @@ private fun DayCard(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 12.dp),
+                .fillMaxSize()
+                .padding(horizontal = 6.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 text = cell.date.dayOfMonth.toString(),
                 fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 color = if (presentation.tier == CalendarCellIntensityTier.NONE) {
                     MaterialTheme.colorScheme.onSurface
                 } else {
                     colors.content
                 },
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                modifier = Modifier.fillMaxWidth(),
             )
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -415,10 +443,12 @@ private fun DayCard(
                 if (presentation.hoursLabel.isNotBlank()) {
                     Text(
                         text = presentation.hoursLabel,
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.labelMedium,
                         color = colors.content,
                         fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 } else {
                     Spacer(modifier = Modifier.height(20.dp))
@@ -579,6 +609,7 @@ private fun SettingsScreen(
     onSaveHourlyRate: (String) -> Unit,
     onSaveMultipliers: (String, String, String) -> Unit,
     onReverseEngineer: (String) -> Unit,
+    onCheckForUpdates: () -> Unit,
     onModeSwitch: () -> Unit,
 ) {
     var selectedModeName by rememberSaveable(uiState.config.yearMonth, uiState.config.rateSource) {
@@ -732,6 +763,52 @@ private fun SettingsScreen(
             }
         }
         item {
+            SettingCard("检查更新", "从 GitHub 最新正式版本检查并下载更新。") {
+                Text(
+                    text = "当前版本：${uiState.currentVersionName}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.testTag("current_version_text"),
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = updateStatusLabel(uiState.updateState, uiState.awaitingInstallPermission),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.testTag("update_status_text"),
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                val isUpdateInProgress = uiState.updateState is UpdateUiState.Checking ||
+                    uiState.updateState is UpdateUiState.Downloading
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Button(
+                        onClick = onCheckForUpdates,
+                        enabled = !isUpdateInProgress,
+                        modifier = Modifier.testTag("check_update_button"),
+                    ) {
+                        Text("检查更新")
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Box(
+                        modifier = Modifier
+                            .width(28.dp)
+                            .height(28.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (isUpdateInProgress) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .testTag("update_progress_indicator"),
+                                strokeWidth = 2.5.dp,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        item {
             SettingCard("节假日说明", "优先级：手动覆盖 > 内置节假日/调休 > 周末 > 普通工作日。") {
                 Text(
                     "当前内置 2026-2030 节假日与调休日数据；超出范围时自动回退为周末规则。任何一天都可以在首页录入时手动覆盖类型。",
@@ -759,6 +836,27 @@ private fun SettingCard(title: String, subtitle: String, content: @Composable ()
 private fun HourlyRateSource.toInputMode(): HourlyRateInputMode = when (this) {
     HourlyRateSource.MANUAL -> HourlyRateInputMode.MANUAL
     HourlyRateSource.REVERSE_ENGINEERED -> HourlyRateInputMode.REVERSE
+}
+
+private fun updateStatusLabel(updateState: UpdateUiState, awaitingInstallPermission: Boolean): String {
+    return when {
+        awaitingInstallPermission -> "请在系统设置中允许安装未知应用，返回后会继续安装。"
+        updateState is UpdateUiState.Checking -> "正在检查 GitHub 最新版本…"
+        updateState is UpdateUiState.Downloading -> {
+            val progress = updateState.progressPercent
+            if (progress == null) {
+                "正在下载 ${updateState.remoteVersion}…"
+            } else {
+                "正在下载 ${updateState.remoteVersion}… $progress%"
+            }
+        }
+        updateState is UpdateUiState.UpToDate -> "当前已是最新版本。"
+        updateState is UpdateUiState.UpdateAvailable -> "发现新版本 ${updateState.remoteVersion}。"
+        updateState is UpdateUiState.ReadyToInstall -> "更新包已准备完成，正在拉起安装。"
+        updateState is UpdateUiState.Error -> updateState.message
+        updateState is UpdateUiState.Idle -> "点击后会检查 GitHub 最新正式版本，并直接下载更新包。"
+        else -> "点击后会检查 GitHub 最新正式版本，并直接下载更新包。"
+    }
 }
 
 private fun DayOfWeek.toCalendarOffset(): Int = when (this) {

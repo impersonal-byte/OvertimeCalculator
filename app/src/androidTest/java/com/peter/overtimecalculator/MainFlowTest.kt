@@ -45,6 +45,8 @@ class MainFlowTest {
         waitForTag("settings_screen")
         composeRule.onNodeWithTag("settings_screen").assertIsDisplayed()
         composeRule.onNodeWithTag("hourly_mode_row").assertIsDisplayed()
+        composeRule.onNodeWithTag("current_version_text").assertIsDisplayed()
+        composeRule.onNodeWithTag("check_update_button").assertIsDisplayed()
 
         composeRule.onNodeWithTag("back_button").performClick()
         waitForTag("home_screen")

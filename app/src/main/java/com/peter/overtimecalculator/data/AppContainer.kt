@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import com.peter.overtimecalculator.data.db.AppDatabase
 import com.peter.overtimecalculator.data.repository.OvertimeRepository
+import com.peter.overtimecalculator.data.update.AndroidUpdateManager
+import com.peter.overtimecalculator.data.update.UpdateManager
 import com.peter.overtimecalculator.domain.ConfigPropagationPlanner
 import com.peter.overtimecalculator.domain.HolidayCalendar
 import com.peter.overtimecalculator.domain.MonthlyOvertimeCalculator
@@ -17,6 +19,8 @@ class AppContainer(context: Context) {
     ).build()
 
     private val holidayCalendar = HolidayCalendar()
+
+    val updateManager: UpdateManager = AndroidUpdateManager(context)
 
     val repository = OvertimeRepository(
         database = database,
