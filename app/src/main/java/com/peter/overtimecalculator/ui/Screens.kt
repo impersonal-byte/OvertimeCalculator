@@ -2,6 +2,7 @@ package com.peter.overtimecalculator.ui
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -60,6 +61,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.alpha
@@ -226,10 +230,12 @@ private fun HomeScreen(
     onNextMonth: () -> Unit,
     onDayClick: (LocalDate) -> Unit,
 ) {
-    val displayedCells = if (uiState.dayCells.isEmpty()) {
-        buildPlaceholderCells(uiState.selectedMonth)
-    } else {
-        uiState.dayCells
+    val displayedCells = remember(uiState.selectedMonth, uiState.dayCells) {
+        if (uiState.dayCells.isEmpty()) {
+            buildPlaceholderCells(uiState.selectedMonth)
+        } else {
+            uiState.dayCells
+        }
     }
 
     Column(
@@ -239,7 +245,7 @@ private fun HomeScreen(
             .padding(horizontal = 16.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        SummaryCard(uiState)
+        SummaryCard(uiState, displayedCells)
         MonthSwitcher(uiState.selectedMonth, onPreviousMonth, onNextMonth)
         CalendarGrid(
             selectedMonth = uiState.selectedMonth,
@@ -252,7 +258,7 @@ private fun HomeScreen(
 }
 
 @Composable
-private fun SummaryCard(uiState: AppUiState) {
+private fun SummaryCard(uiState: AppUiState, dayCells: List<DayCellUiState>) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         shape = RoundedCornerShape(28.dp),
@@ -304,6 +310,14 @@ private fun SummaryCard(uiState: AppUiState) {
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
+            
+            Spacer(modifier = Modifier.height(2.dp))
+            OvertimeTrendChart(
+                dayCells = dayCells,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(28.dp) // 更极简扁平的高度
+            )
         }
     }
 }
@@ -545,14 +559,20 @@ private fun layeredColors(
 ): DayCardColors {
     val amount = when (tier) {
         CalendarCellIntensityTier.NONE -> 0f
-        CalendarCellIntensityTier.LOW -> 0.42f
-        CalendarCellIntensityTier.MID -> 0.68f
-        CalendarCellIntensityTier.HIGH -> 0.92f
+        CalendarCellIntensityTier.LOW -> 0.35f
+        CalendarCellIntensityTier.MID -> 0.70f
+        CalendarCellIntensityTier.HIGH -> 1.0f
+    }
+    val borderAmount = when (tier) {
+        CalendarCellIntensityTier.NONE -> 0f
+        CalendarCellIntensityTier.LOW -> 0.45f
+        CalendarCellIntensityTier.MID -> 0.75f
+        CalendarCellIntensityTier.HIGH -> 1.0f
     }
     return DayCardColors(
         container = lerp(base, target, amount),
         content = if (amount >= 0.6f) content else MaterialTheme.colorScheme.onSurface,
-        border = lerp(MaterialTheme.colorScheme.outlineVariant, border, 0.75f),
+        border = lerp(MaterialTheme.colorScheme.outlineVariant, border, borderAmount),
     )
 }
 
@@ -1418,3 +1438,59 @@ private fun buildPlaceholderCells(selectedMonth: YearMonth): List<DayCellUiState
         )
     }
 }
+
+@Composable
+private fun OvertimeTrendChart(
+    dayCells: List<DayCellUiState>,
+    modifier: Modifier = Modifier,
+) {
+    if (dayCells.isEmpty()) return
+
+    val chartBars = remember(dayCells) {
+        val maxMinutes = dayCells.maxOfOrNull { kotlin.math.abs(it.overtimeMinutes) }
+            ?.coerceAtLeast(60)
+            ?: 60
+        dayCells.map { cell ->
+            val absoluteMinutes = kotlin.math.abs(cell.overtimeMinutes)
+            TrendBarData(
+                heightRatio = absoluteMinutes.toFloat() / maxMinutes.toFloat(),
+                alpha = when {
+                    absoluteMinutes == 0 -> 0f
+                    cell.overtimeMinutes < 0 -> 0.3f
+                    else -> 0.85f
+                },
+            )
+        }
+    }
+
+    if (chartBars.none { it.heightRatio > 0f }) return
+
+    val barColor = MaterialTheme.colorScheme.onPrimaryContainer
+
+    Canvas(
+        modifier = modifier.testTag("overtime_trend_chart"),
+    ) {
+        val barWidth = size.width / chartBars.size.coerceAtLeast(1)
+        val maxBarHeight = size.height
+        val barCorner = 2.dp.toPx()
+
+        chartBars.forEachIndexed { index, bar ->
+            if (bar.heightRatio <= 0f) return@forEachIndexed
+
+            val barHeight = maxBarHeight * bar.heightRatio
+            val topY = size.height - barHeight
+            drawRoundRect(
+                color = barColor,
+                topLeft = Offset(x = index * barWidth + barWidth * 0.1f, y = topY),
+                size = Size(width = barWidth * 0.8f, height = barHeight),
+                cornerRadius = CornerRadius(barCorner, barCorner),
+                alpha = bar.alpha,
+            )
+        }
+    }
+}
+
+private data class TrendBarData(
+    val heightRatio: Float,
+    val alpha: Float,
+)
