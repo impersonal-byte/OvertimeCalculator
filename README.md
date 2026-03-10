@@ -88,12 +88,12 @@
 
 需要在 GitHub 仓库 `Settings > Secrets and variables > Actions` 中配置这 4 个 Secrets：
 
-- `ANDROID_KEYSTORE_BASE64`
-- `ANDROID_KEY_ALIAS`
-- `ANDROID_STORE_PASSWORD`
-- `ANDROID_KEY_PASSWORD`
+- `SIGNING_KEY`
+- `ALIAS`
+- `KEY_STORE_PASSWORD`
+- `KEY_PASSWORD`
 
-Windows PowerShell 生成 `ANDROID_KEYSTORE_BASE64`：
+Windows PowerShell 生成 `SIGNING_KEY`：
 
 ```powershell
 [Convert]::ToBase64String([IO.File]::ReadAllBytes(".\\OvertimeCalculator.jks"))

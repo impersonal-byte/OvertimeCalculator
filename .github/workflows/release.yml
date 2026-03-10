@@ -17,10 +17,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
-      SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEY }}
+      SIGNING_KEY_ALIAS: ${{ secrets.ALIAS }}
+      SIGNING_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+      SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -43,19 +43,19 @@ jobs:
         run: |
           missing=0
           if [ -z "$SIGNING_KEYSTORE_BASE64" ]; then
-            echo "Missing secret: ANDROID_KEYSTORE_BASE64"
+            echo "Missing secret: SIGNING_KEY"
             missing=1
           fi
           if [ -z "$SIGNING_KEY_ALIAS" ]; then
-            echo "Missing secret: ANDROID_KEY_ALIAS"
+            echo "Missing secret: ALIAS"
             missing=1
           fi
           if [ -z "$SIGNING_STORE_PASSWORD" ]; then
-            echo "Missing secret: ANDROID_STORE_PASSWORD"
+            echo "Missing secret: KEY_STORE_PASSWORD"
             missing=1
           fi
           if [ -z "$SIGNING_KEY_PASSWORD" ]; then
-            echo "Missing secret: ANDROID_KEY_PASSWORD"
+            echo "Missing secret: KEY_PASSWORD"
             missing=1
           fi
           if [ "$missing" -ne 0 ]; then
