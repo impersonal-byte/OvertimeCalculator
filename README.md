@@ -5,11 +5,11 @@
 <h1 align="center">加薪</h1>
 
 <p align="center">
-  一个为个人用户设计的原生 Android 加班工资计算器。
+  一个面向个人使用的原生 Android 加班工资计算器。
 </p>
 
 <p align="center">
-  用月历记录每天的加班时长，按工作日 / 休息日 / 节假日倍率自动计算，并实时查看当月累计加班工资。
+  用月历记录每天的加班或调休时长，按工作日 / 休息日 / 节假日规则自动计算，并实时汇总当月金额。
 </p>
 
 <p align="center">
@@ -17,64 +17,31 @@
   ·
   <a href="#功能亮点">功能亮点</a>
   ·
-  <a href="#界面预览">界面预览</a>
-  ·
   <a href="#本地运行">本地运行</a>
-</p>
-
-<p align="center">
-  <img alt="Android" src="https://img.shields.io/badge/Android-26%2B-3DDC84?style=flat-square&logo=android&logoColor=white" />
-  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.x-7F52FF?style=flat-square&logo=kotlin&logoColor=white" />
-  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=flat-square" />
-  <img alt="License" src="https://img.shields.io/badge/License-MIT-black?style=flat-square" />
+  ·
+  <a href="#github-actions-自动发版">GitHub Actions 自动发版</a>
 </p>
 
 ## 功能亮点
 
-- 月历首页查看整月加班记录
-- 点击日期快速录入小时和分钟
-- 按工作日、休息日、法定节假日自动应用不同倍率
-- 支持手动修改倍率
-- 支持手动输入时薪
-- 支持根据“已发加班工资”反推时薪
-- 首页实时汇总当月累计加班工资和总时长
-- 所有数据本地保存，可离线使用
-
-## 为什么做这个项目
-
-很多加班记录工具更偏排班或工时统计，不够贴近日常“我这个月到底能拿多少加班工资”这个问题。
-
-“加薪”更关注两件事：
-
-- 记录足够快：打开就能点日历填工时
-- 结果足够直接：首页就能看到当月累计工资
-
-## 界面预览
-
-<p align="center">
-  <img src="./docs/images/settings.png" width="220" alt="首页月历" />
-  <img src="./docs/images/day-editor.png" width="220" alt="日期录入" />
-  <img src="./docs/images/config.png" width="220" alt="参数设置" />
-</p>
+- 月历首页展示整月记录、净时长和累计加班工资
+- 支持工作日、休息日、节假日不同倍率
+- 支持工作日调休录入，自动按月度余额抵扣
+- 支持手动输入时薪，也支持按已发加班工资反推时薪
+- 支持手动覆盖某一天的日期类型
+- 支持中国节假日基线数据，并通过 Timor API 静默刷新
+- 支持应用内检查更新，从 GitHub Release 下载新版本
 
 ## 计算规则
 
-- 日期类型优先级
-  - 用户手动覆盖
-  - 内置节假日 / 调休数据
-  - 周末判定
-  - 普通工作日
-- 默认倍率
-  - 工作日：`1.5`
-  - 休息日：`2.0`
-  - 法定节假日：`3.0`
-- 时薪反推公式
-  - `时薪 = 已发加班工资 / 倍率加权小时数`
-
-说明：
-
-- 反推时薪依赖当月每日加班明细
-- 如果只有月总时长，没有每天的日期类型分布，应用不会做模糊估算
+- 日期类型优先级：
+  用户手动覆盖 > 节假日/调休规则 > 周末 > 普通工作日
+- 默认倍率：
+  工作日 `1.5`，休息日 `2.0`，节假日 `3.0`
+- 调休规则：
+  仅工作日允许录入负时长，且优先抵扣工作日加班，再抵扣休息日，最后抵扣节假日
+- 反推公式：
+  `时薪 = 已发加班工资 / 倍率加权小时数`
 
 ## 技术栈
 
@@ -84,21 +51,8 @@
 - Navigation Compose
 - Android ViewModel
 - Room
-
-## 当前状态
-
-当前版本已支持：
-
-- 月历首页展示
-- 设置页导航
-- 每日加班录入与保存
-- 首页汇总实时刷新
-- 手动设置时薪
-- 反推时薪
-- Android 自适应启动图标
-- Room 本地存储
-- 基础单元测试
-- 基础 Compose UI 测试
+- DataStore
+- WorkManager
 
 ## 本地运行
 
@@ -108,55 +62,65 @@
 - Android SDK
 - JDK 17
 
-构建调试包：
-
-```powershell
-.\gradlew.bat assembleDebug
-```
-
-运行单元测试：
+常用命令：
 
 ```powershell
 .\gradlew.bat testDebugUnitTest
+.\gradlew.bat assembleDebug
+.\gradlew.bat packageReleaseApk
 ```
 
-运行设备或模拟器测试：
+产物位置：
+
+```text
+调试包: app/build/outputs/apk/debug/app-debug.apk
+正式包: app/build/dist/OvertimeCalculator-<version>-universal.apk
+```
+
+## GitHub Actions 自动发版
+
+仓库现在包含两套工作流：
+
+- `Android CI`
+  在 `main` 提交和指向 `main` 的 PR 上运行，仅做校验，不生成正式发布包
+- `Android Release`
+  仅在推送 `v*` 标签时运行，自动做正式签名构建、创建/更新 GitHub Release、上传 APK
+
+需要在 GitHub 仓库 `Settings > Secrets and variables > Actions` 中配置这 4 个 Secrets：
+
+- `ANDROID_KEYSTORE_BASE64`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_STORE_PASSWORD`
+- `ANDROID_KEY_PASSWORD`
+
+Windows PowerShell 生成 `ANDROID_KEYSTORE_BASE64`：
 
 ```powershell
-.\gradlew.bat connectedDebugAndroidTest
+[Convert]::ToBase64String([IO.File]::ReadAllBytes(".\\OvertimeCalculator.jks"))
 ```
 
-调试 APK 输出位置：
+发版流程：
 
-```text
-app/build/outputs/apk/debug/app-debug.apk
+```powershell
+git add .
+git commit -m "Release v1.4.1"
+git tag v1.4.1
+git push origin main
+git push origin v1.4.1
 ```
 
-## 目录结构
+注意：
 
-```text
-app/src/main/java/com/peter/overtimecalculator
-|- data
-|  |- db
-|  \- repository
-|- domain
-\- ui
-```
+- tag 去掉前缀 `v` 后，必须与 `app/build.gradle.kts` 中的 `appVersionName` 完全一致
+- 若存在 `docs/releases/v1.4.1.md`，工作流会优先用它作为 Release 正文
+- 若不存在对应文档，工作流会回退到 GitHub 自动生成 Release notes
 
 ## 已知限制
 
-- 当前数据只保存在本地设备
+- 当前数据仅保存在本地设备
 - 暂无云同步
-- 暂无导出 Excel / CSV / PDF
-- 暂无通知提醒和桌面组件
-- 节假日数据仍有继续完善空间
-
-## Roadmap
-
-- 完善 Compose UI 回归测试
-- 继续优化图标与品牌细节
-- 补充更完整的节假日与调休数据
-- 增加导出与备份能力
+- 暂无 Excel / CSV / PDF 导出
+- 暂无桌面组件
 
 ## License
 

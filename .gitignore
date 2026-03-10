@@ -17,3 +17,5 @@
 /bugreport-*.zip
 /editor-step-*.png
 /overtime-*.png
+*.jks
+*.jks.base64.txt

@@ -1,5 +1,13 @@
+import java.util.Properties
+
 val appVersionCode = 6
 val appVersionName = "1.4.0"
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use(::load)
+    }
+}
 
 plugins {
     id("com.android.application")
@@ -24,10 +32,30 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = localProperties.getProperty("signing.storeFile")
+            val keyAliasValue = localProperties.getProperty("signing.keyAlias")
+            val storePasswordValue = localProperties.getProperty("signing.storePassword")
+            val keyPasswordValue = localProperties.getProperty("signing.keyPassword")
+
+            if (!storeFilePath.isNullOrBlank() &&
+                !keyAliasValue.isNullOrBlank() &&
+                !storePasswordValue.isNullOrBlank() &&
+                !keyPasswordValue.isNullOrBlank()
+            ) {
+                storeFile = file(storeFilePath)
+                keyAlias = keyAliasValue
+                storePassword = storePasswordValue
+                keyPassword = keyPasswordValue
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -103,4 +131,16 @@ tasks.register<Copy>("packageReleaseApk") {
     }
     into(layout.buildDirectory.dir("dist"))
     rename { "OvertimeCalculator-$appVersionName-universal.apk" }
+}
+
+tasks.register("printVersionName") {
+    doLast {
+        println(appVersionName)
+    }
+}
+
+tasks.register("printVersionCode") {
+    doLast {
+        println(appVersionCode)
+    }
 }
