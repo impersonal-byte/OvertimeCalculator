@@ -9,6 +9,8 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import com.peter.overtimecalculator.domain.AppTheme
+import com.peter.overtimecalculator.domain.SeedColor
 import com.peter.overtimecalculator.ui.AppUiState
 import com.peter.overtimecalculator.ui.AppUpdateUiState
 import com.peter.overtimecalculator.ui.CalendarStartDay
@@ -32,6 +34,10 @@ fun NavGraphBuilder.settingsGraph(
     onReverseEngineer: (String) -> Unit,
     onCheckForUpdates: () -> Unit,
     onCalendarStartDayChange: (CalendarStartDay) -> Unit,
+    onAppThemeChange: (AppTheme) -> Unit,
+    onUseDynamicColorChange: (Boolean) -> Unit,
+    onSeedColorChange: (SeedColor) -> Unit,
+    onExportDataClick: () -> Unit,
     onModeSwitch: () -> Unit,
 ) {
     navigation(
@@ -85,6 +91,9 @@ fun NavGraphBuilder.settingsGraph(
             PreferencesScreen(
                 uiState = uiState,
                 onCalendarStartDayChange = onCalendarStartDayChange,
+                onAppThemeChange = onAppThemeChange,
+                onUseDynamicColorChange = onUseDynamicColorChange,
+                onSeedColorChange = onSeedColorChange,
                 onBack = { navController.popBackStack() },
                 modifier = Modifier.padding(innerPadding),
             )
@@ -98,6 +107,7 @@ fun NavGraphBuilder.settingsGraph(
             popExitTransition = { settingsBackExit() },
         ) {
             DataManagementScreen(
+                onExportDataClick = onExportDataClick,
                 onBack = { navController.popBackStack() },
                 modifier = Modifier.padding(innerPadding),
             )

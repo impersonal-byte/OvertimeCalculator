@@ -12,11 +12,20 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import com.peter.overtimecalculator.domain.AppTheme
+import com.peter.overtimecalculator.domain.SeedColor
 import com.peter.overtimecalculator.ui.AppUiState
 import com.peter.overtimecalculator.ui.CalendarStartDay
 
@@ -25,6 +34,9 @@ import com.peter.overtimecalculator.ui.CalendarStartDay
 fun PreferencesScreen(
     uiState: AppUiState,
     onCalendarStartDayChange: (CalendarStartDay) -> Unit,
+    onAppThemeChange: (AppTheme) -> Unit,
+    onUseDynamicColorChange: (Boolean) -> Unit,
+    onSeedColorChange: (SeedColor) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -73,6 +85,71 @@ fun PreferencesScreen(
                     }
                 }
             }
+            
+            item {
+                SettingCard("深浅模式", "选择使用跟随系统、始终浅色或始终深色的界面模式。") {
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier.fillMaxWidth().testTag("app_theme_row"),
+                    ) {
+                        val options = listOf(AppTheme.SYSTEM to "跟随系统", AppTheme.LIGHT to "浅色", AppTheme.DARK to "深色")
+                        options.forEachIndexed { index, option ->
+                            SegmentedButton(
+                                selected = uiState.appTheme == option.first,
+                                onClick = { onAppThemeChange(option.first) },
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                            ) {
+                                Text(option.second)
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                item {
+                    SettingCard("动态配色", "提取当前壁纸的主色调融入应用界面的背景中。关闭后可使用原生基调色。") {
+                        Switch(
+                            checked = uiState.useDynamicColor,
+                            onCheckedChange = { onUseDynamicColorChange(it) },
+                            modifier = Modifier.testTag("dynamic_color_switch")
+                        )
+                    }
+                }
+            }
+
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S || !uiState.useDynamicColor) {
+                item {
+                    SettingCard("个性基调色", "为应用指定一套原生的色彩配置底座。") {
+                        androidx.compose.foundation.layout.Row(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            val seedColorMapping = mapOf(
+                                SeedColor.CLAY to Color(0xFF9A3412),
+                                SeedColor.GEEK_BLUE to Color(0xFF0052CC),
+                                SeedColor.MINT_GREEN to Color(0xFF00BFA5),
+                                SeedColor.DEEP_PURPLE to Color(0xFF6750A4),
+                            )
+                            SeedColor.entries.forEach { seed ->
+                                val color = seedColorMapping[seed] ?: Color.Gray
+                                val isSelected = uiState.seedColor == seed
+                                androidx.compose.foundation.layout.Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(color, CircleShape)
+                                        .border(
+                                            width = if (isSelected) 3.dp else 0.dp,
+                                            color = if (isSelected) androidx.compose.material3.MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                                            shape = CircleShape
+                                        )
+                                        .clickable { onSeedColorChange(seed) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
     }

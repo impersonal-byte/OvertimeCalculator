@@ -10,13 +10,20 @@ import com.peter.overtimecalculator.domain.DayCellUiState
 import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.DomainResult
 import com.peter.overtimecalculator.domain.HourlyRateSource
+import com.peter.overtimecalculator.domain.INTERNAL_SCALE
 import com.peter.overtimecalculator.domain.MonthlyConfig
 import com.peter.overtimecalculator.domain.MonthlySummaryUiState
 import com.peter.overtimecalculator.domain.ObservedMonth
 import com.peter.overtimecalculator.domain.ZeroDecimal
+import com.peter.overtimecalculator.domain.AppTheme
+import com.peter.overtimecalculator.domain.SeedColor
+import com.peter.overtimecalculator.domain.isPositive
 import com.peter.overtimecalculator.domain.toDisplayString
+import java.io.File
+import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -35,12 +42,22 @@ data class DayEditorUiState(
     val currentOverride: DayType?,
 )
 
+private data class AppearancePreferences(
+    val calendarStartDay: CalendarStartDay,
+    val appTheme: AppTheme,
+    val useDynamicColor: Boolean,
+    val seedColor: SeedColor,
+)
+
 data class AppUiState(
     val selectedMonth: YearMonth,
     val dayCells: List<DayCellUiState>,
     val summary: MonthlySummaryUiState,
     val config: MonthlyConfig,
     val calendarStartDay: CalendarStartDay,
+    val appTheme: AppTheme,
+    val useDynamicColor: Boolean,
+    val seedColor: SeedColor,
     val editor: DayEditorUiState? = null,
 ) {
     companion object {
@@ -67,6 +84,9 @@ data class AppUiState(
                 ),
                 config = config,
                 calendarStartDay = CalendarStartDay.MONDAY,
+                appTheme = AppTheme.SYSTEM,
+                useDynamicColor = true,
+                seedColor = SeedColor.CLAY,
             )
         }
     }
@@ -74,6 +94,8 @@ data class AppUiState(
 
 sealed interface UiEvent {
     data class ShowSnackbar(val message: String) : UiEvent
+
+    data class ShareCsvExport(val file: File) : UiEvent
 
     data object TriggerHaptic : UiEvent
 }
@@ -95,6 +117,9 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
     private val selectedEditorDate = MutableStateFlow<LocalDate?>(null)
     private val sharedPreferences = application.getSharedPreferences("overtime-preferences", Context.MODE_PRIVATE)
     private val calendarStartDay = MutableStateFlow(loadCalendarStartDay())
+    private val appTheme = MutableStateFlow(loadAppTheme())
+    private val useDynamicColor = MutableStateFlow(loadUseDynamicColor())
+    private val seedColor = MutableStateFlow(loadSeedColor())
     private val _events = Channel<UiEvent>(Channel.BUFFERED)
 
     val events: Flow<UiEvent> = _events.receiveAsFlow()
@@ -103,19 +128,34 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
         .flatMapLatest(repository::observeMonth)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    private val appearancePreferences = combine(
+        calendarStartDay,
+        appTheme,
+        useDynamicColor,
+        seedColor,
+    ) { currentCalendarStartDay, currentAppTheme, currentUseDynamicColor, currentSeedColor ->
+        AppearancePreferences(
+            calendarStartDay = currentCalendarStartDay,
+            appTheme = currentAppTheme,
+            useDynamicColor = currentUseDynamicColor,
+            seedColor = currentSeedColor,
+        )
+    }
+
     val uiState: StateFlow<AppUiState> = combine(
         selectedMonth,
         observedMonth,
         selectedEditorDate,
-        calendarStartDay,
-    ) { month: YearMonth,
-        observed: ObservedMonth?,
-        editorDate: LocalDate?,
-        currentCalendarStartDay: CalendarStartDay ->
+        appearancePreferences,
+    ) { month, observed, editorDate, appearance ->
+
         if (observed == null) {
             AppUiState.empty().copy(
                 selectedMonth = month,
-                calendarStartDay = currentCalendarStartDay,
+                calendarStartDay = appearance.calendarStartDay,
+                appTheme = appearance.appTheme,
+                useDynamicColor = appearance.useDynamicColor,
+                seedColor = appearance.seedColor,
             )
         } else {
             AppUiState(
@@ -123,7 +163,10 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
                 dayCells = observed.dayCells,
                 summary = observed.summary,
                 config = observed.config,
-                calendarStartDay = currentCalendarStartDay,
+                calendarStartDay = appearance.calendarStartDay,
+                appTheme = appearance.appTheme,
+                useDynamicColor = appearance.useDynamicColor,
+                seedColor = appearance.seedColor,
                 editor = editorDate?.let { date ->
                     DayEditorUiState(
                         date = date,
@@ -176,6 +219,21 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
         sharedPreferences.edit()
             .putString(KEY_CALENDAR_START_DAY, startDay.name)
             .apply()
+    }
+
+    fun updateTheme(theme: AppTheme) {
+        appTheme.value = theme
+        sharedPreferences.edit().putString(KEY_APP_THEME, theme.name).apply()
+    }
+
+    fun updateUseDynamicColor(useDynamic: Boolean) {
+        useDynamicColor.value = useDynamic
+        sharedPreferences.edit().putBoolean(KEY_USE_DYNAMIC_COLOR, useDynamic).apply()
+    }
+
+    fun updateSeedColor(seed: SeedColor) {
+        seedColor.value = seed
+        sharedPreferences.edit().putString(KEY_SEED_COLOR, seed.name).apply()
     }
 
     fun saveOvertime(date: LocalDate, hoursText: String, minutesText: String, overrideDayType: DayType?) {
@@ -270,6 +328,22 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun exportMonthlyCsv() {
+        val uiStateSnapshot = uiState.value
+        viewModelScope.launch {
+            val exportResult = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                runCatching { createCsvFile(uiStateSnapshot) }
+            }
+            exportResult
+                .onSuccess { file ->
+                    _events.send(UiEvent.ShareCsvExport(file))
+                }
+                .onFailure {
+                    _events.send(UiEvent.ShowSnackbar("导出 CSV 失败，请稍后重试"))
+                }
+        }
+    }
+
     private fun ensureMonth(month: YearMonth) {
         viewModelScope.launch {
             repository.ensureMonthExists(month)
@@ -297,14 +371,63 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    private fun createCsvFile(uiStateValue: AppUiState): File {
+        val csvContent = buildString {
+            append("日期,类型,加班/调休(分钟),当天计费预估(元)\n")
+            uiStateValue.dayCells.filter { it.overtimeMinutes != 0 }.forEach { cell ->
+                val typeStr = when (cell.dayType) {
+                    DayType.WORKDAY -> "工作日"
+                    DayType.REST_DAY -> "休息日"
+                    DayType.HOLIDAY -> "节假日"
+                }
+                append("${cell.date},$typeStr,${cell.overtimeMinutes},${cell.pay.toDisplayString()}\n")
+            }
+            append("\n汇总月份,${uiStateValue.selectedMonth}\n")
+            append("总计分钟,${uiStateValue.summary.totalMinutes}\n")
+            append("加权总工时(小时),${calculateWeightedHours(uiStateValue.summary).toDisplayString()}\n")
+            append("总计收益预估(元),${uiStateValue.summary.totalPay.toDisplayString()}\n")
+        }
+        val exportDir = File(getApplication<Application>().cacheDir, "exports")
+        exportDir.mkdirs()
+        return File(exportDir, "Overtime_Records_${uiStateValue.selectedMonth}.csv").apply {
+            writeBytes(byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()) + csvContent.toByteArray())
+        }
+    }
+
+    private fun calculateWeightedHours(summary: MonthlySummaryUiState) =
+        if (summary.hourlyRate.isPositive()) {
+            summary.totalPay.divide(summary.hourlyRate, INTERNAL_SCALE, RoundingMode.HALF_UP)
+        } else {
+            ZeroDecimal
+        }
+
     private fun loadCalendarStartDay(): CalendarStartDay {
         return sharedPreferences.getString(KEY_CALENDAR_START_DAY, CalendarStartDay.MONDAY.name)
             ?.let { stored -> CalendarStartDay.entries.firstOrNull { it.name == stored } }
             ?: CalendarStartDay.MONDAY
     }
 
+    private fun loadAppTheme(): AppTheme {
+        return sharedPreferences.getString(KEY_APP_THEME, AppTheme.SYSTEM.name)
+            ?.let { stored -> AppTheme.entries.firstOrNull { it.name == stored } }
+            ?: AppTheme.SYSTEM
+    }
+
+    private fun loadUseDynamicColor(): Boolean {
+        return sharedPreferences.getBoolean(KEY_USE_DYNAMIC_COLOR, true)
+    }
+
+    private fun loadSeedColor(): SeedColor {
+        return sharedPreferences.getString(KEY_SEED_COLOR, SeedColor.CLAY.name)
+            ?.let { stored -> SeedColor.entries.firstOrNull { it.name == stored } }
+            ?: SeedColor.CLAY
+    }
+
     companion object {
         private const val KEY_CALENDAR_START_DAY = "calendar_start_day"
+        private const val KEY_APP_THEME = "app_theme"
+        private const val KEY_USE_DYNAMIC_COLOR = "use_dynamic_color"
+        private const val KEY_SEED_COLOR = "seed_color"
 
         fun provideFactory(application: Application): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DataManagementScreen(
+    onExportDataClick: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -42,13 +43,15 @@ fun DataManagementScreen(
             item { Spacer(modifier = Modifier.height(4.dp)) }
             item {
                 SettingCard(
-                    title = "功能预留",
-                    subtitle = "后续这里会承接导出流水、数据备份和恢复。",
+                    title = "导出本月数据备份",
+                    subtitle = "将当前的打卡流水导出为 CSV 电子表格。支持使用 Excel 查看，亦可通过原生共享发送给上级或 HR 进行复核。",
                 ) {
-                    Text(
-                        text = "当前版本先完成信息架构落位，避免后续继续把设置页堆成一张长表单。",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    androidx.compose.material3.Button(
+                        onClick = onExportDataClick,
+                        modifier = Modifier.fillMaxWidth().testTag("export_csv_btn")
+                    ) {
+                        Text("导出本月 CSV 数据")
+                    }
                 }
             }
             item { Spacer(modifier = Modifier.height(16.dp)) }

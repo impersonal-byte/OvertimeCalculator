@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/impersonal-byte/OvertimeCalculator/releases/tag/v1.5.0">下载 v1.5.0</a>
+  <a href="https://github.com/impersonal-byte/OvertimeCalculator/releases/tag/v1.6.0">下载 v1.6.0</a>
   ·
   <a href="#功能亮点">功能亮点</a>
   ·
@@ -31,6 +31,8 @@
 - 支持手动覆盖某一天的日期类型
 - 支持中国节假日基线数据，并通过 Timor API 静默刷新
 - 支持应用内检查更新，从 GitHub Release 下载新版本
+- 支持外观模式、动态取色与多套种子色切换
+- 支持导出本月 CSV 数据并通过系统分享发送
 
 ## 计算规则
 
@@ -103,23 +105,23 @@ Windows PowerShell 生成 `SIGNING_KEY`：
 
 ```powershell
 git add .
-git commit -m "Release v1.5.0"
-git tag v1.5.0
+git commit -m "Release v1.6.0"
+git tag v1.6.0
 git push origin main
-git push origin v1.5.0
+git push origin v1.6.0
 ```
 
 注意：
 
 - tag 去掉前缀 `v` 后，必须与 `app/build.gradle.kts` 中的 `appVersionName` 完全一致
-- 若存在 `docs/releases/v1.5.0.md`，工作流会优先用它作为 Release 正文
+- 若存在 `docs/releases/v1.6.0.md`，工作流会优先用它作为 Release 正文
 - 若不存在对应文档，工作流会回退到 GitHub 自动生成 Release notes
 
 ## 已知限制
 
 - 当前数据仅保存在本地设备
 - 暂无云同步
-- 暂无 Excel / CSV / PDF 导出
+- 暂无 PDF 导出
 - 暂无桌面组件
 
 ## License

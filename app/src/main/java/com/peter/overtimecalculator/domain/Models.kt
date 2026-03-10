@@ -15,6 +15,19 @@ enum class HourlyRateSource {
     REVERSE_ENGINEERED,
 }
 
+enum class AppTheme {
+    SYSTEM,
+    LIGHT,
+    DARK,
+}
+
+enum class SeedColor(val label: String) {
+    CLAY("陶土红"),
+    GEEK_BLUE("极客蓝"),
+    MINT_GREEN("护眼绿"),
+    DEEP_PURPLE("深邃紫"),
+}
+
 data class MonthlyConfig(
     val yearMonth: YearMonth,
     val hourlyRate: BigDecimal,

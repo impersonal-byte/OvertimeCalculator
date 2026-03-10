@@ -1,5 +1,6 @@
 package com.peter.overtimecalculator.ui
 
+import android.content.Intent
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
@@ -67,6 +68,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -80,6 +82,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.core.content.FileProvider
 import com.peter.overtimecalculator.domain.DayCellUiState
 import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.HolidayCalendar
@@ -123,6 +126,7 @@ fun OvertimeCalculatorApp(
     val updateUiState by appUpdateViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val tickHaptic = rememberTickHapticFeedback()
+    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: HomeRoute
@@ -133,10 +137,23 @@ fun OvertimeCalculatorApp(
         appUpdateViewModel.clearMessage()
     }
 
-    LaunchedEffect(viewModel) {
+    LaunchedEffect(viewModel, context) {
         viewModel.events.collect { event ->
             when (event) {
                 is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+                is UiEvent.ShareCsvExport -> {
+                    val uri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        event.file,
+                    )
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/csv"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, "导出本月加薪数据"))
+                }
                 UiEvent.TriggerHaptic -> tickHaptic.performTick()
             }
         }
@@ -186,6 +203,10 @@ fun OvertimeCalculatorApp(
                 onReverseEngineer = viewModel::reverseEngineerHourlyRate,
                 onCheckForUpdates = appUpdateViewModel::checkForUpdates,
                 onCalendarStartDayChange = viewModel::updateCalendarStartDay,
+                onAppThemeChange = viewModel::updateTheme,
+                onUseDynamicColorChange = viewModel::updateUseDynamicColor,
+                onSeedColorChange = viewModel::updateSeedColor,
+                onExportDataClick = viewModel::exportMonthlyCsv,
                 onModeSwitch = tickHaptic::performTick,
             )
         }
