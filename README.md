@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/impersonal-byte/OvertimeCalculator/releases/tag/v1.4.1">下载 v1.4.1</a>
+  <a href="https://github.com/impersonal-byte/OvertimeCalculator/releases/tag/v1.4.2">下载 v1.4.2</a>
   ·
   <a href="#功能亮点">功能亮点</a>
   ·
@@ -103,16 +103,16 @@ Windows PowerShell 生成 `SIGNING_KEY`：
 
 ```powershell
 git add .
-git commit -m "Release v1.4.1"
-git tag v1.4.1
+git commit -m "Release v1.4.2"
+git tag v1.4.2
 git push origin main
-git push origin v1.4.1
+git push origin v1.4.2
 ```
 
 注意：
 
 - tag 去掉前缀 `v` 后，必须与 `app/build.gradle.kts` 中的 `appVersionName` 完全一致
-- 若存在 `docs/releases/v1.4.1.md`，工作流会优先用它作为 Release 正文
+- 若存在 `docs/releases/v1.4.2.md`，工作流会优先用它作为 Release 正文
 - 若不存在对应文档，工作流会回退到 GitHub 自动生成 Release notes
 
 ## 已知限制
