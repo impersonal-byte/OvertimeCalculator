@@ -16,6 +16,11 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+      SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -33,20 +38,46 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Validate signing secrets
+        shell: bash
+        run: |
+          missing=0
+          if [ -z "$SIGNING_KEYSTORE_BASE64" ]; then
+            echo "Missing secret: ANDROID_KEYSTORE_BASE64"
+            missing=1
+          fi
+          if [ -z "$SIGNING_KEY_ALIAS" ]; then
+            echo "Missing secret: ANDROID_KEY_ALIAS"
+            missing=1
+          fi
+          if [ -z "$SIGNING_STORE_PASSWORD" ]; then
+            echo "Missing secret: ANDROID_STORE_PASSWORD"
+            missing=1
+          fi
+          if [ -z "$SIGNING_KEY_PASSWORD" ]; then
+            echo "Missing secret: ANDROID_KEY_PASSWORD"
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
       - name: Decode signing keystore
         shell: bash
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "$GITHUB_WORKSPACE/release-signing.jks"
+          echo "$SIGNING_KEYSTORE_BASE64" | base64 --decode > "$GITHUB_WORKSPACE/release-signing.jks"
+          test -s "$GITHUB_WORKSPACE/release-signing.jks"
 
       - name: Generate local.properties for CI signing
         shell: bash
         run: |
+          SDK_DIR="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           cat <<EOF > local.properties
-          sdk.dir=$ANDROID_HOME
+          sdk.dir=$SDK_DIR
           signing.storeFile=$GITHUB_WORKSPACE/release-signing.jks
-          signing.keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          signing.storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
-          signing.keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          signing.keyAlias=$SIGNING_KEY_ALIAS
+          signing.storePassword=$SIGNING_STORE_PASSWORD
+          signing.keyPassword=$SIGNING_KEY_PASSWORD
           EOF
 
       - name: Ensure Gradle wrapper is executable
