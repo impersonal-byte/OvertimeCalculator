@@ -1,0 +1,133 @@
+package com.peter.overtimecalculator.ui.settings
+
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.compose.composable
+import androidx.navigation.navigation
+import com.peter.overtimecalculator.ui.AppUiState
+import com.peter.overtimecalculator.ui.AppUpdateUiState
+import com.peter.overtimecalculator.ui.CalendarStartDay
+
+object SettingsDestinations {
+    const val GRAPH_ROUTE = "settings_graph"
+    const val MAIN = "settings/main"
+    const val RULES = "settings/rules"
+    const val PREFERENCES = "settings/preferences"
+    const val DATA = "settings/data"
+    const val ABOUT = "settings/about"
+}
+
+fun NavGraphBuilder.settingsGraph(
+    navController: NavController,
+    uiState: AppUiState,
+    updateUiState: AppUpdateUiState,
+    innerPadding: PaddingValues,
+    onSaveHourlyRate: (String) -> Unit,
+    onSaveMultipliers: (String, String, String) -> Unit,
+    onReverseEngineer: (String) -> Unit,
+    onCheckForUpdates: () -> Unit,
+    onCalendarStartDayChange: (CalendarStartDay) -> Unit,
+    onModeSwitch: () -> Unit,
+) {
+    navigation(
+        startDestination = SettingsDestinations.MAIN,
+        route = SettingsDestinations.GRAPH_ROUTE,
+    ) {
+        composable(
+            route = SettingsDestinations.MAIN,
+            enterTransition = { settingsForwardEnter() },
+            exitTransition = { settingsForwardExit() },
+            popEnterTransition = { settingsBackEnter() },
+            popExitTransition = { settingsBackExit() },
+        ) {
+            SettingsMainScreen(
+                uiState = uiState,
+                updateUiState = updateUiState,
+                onBack = { navController.popBackStack() },
+                onNavigateToRules = { navController.navigate(SettingsDestinations.RULES) },
+                onNavigateToPreferences = { navController.navigate(SettingsDestinations.PREFERENCES) },
+                onNavigateToData = { navController.navigate(SettingsDestinations.DATA) },
+                onNavigateToAbout = { navController.navigate(SettingsDestinations.ABOUT) },
+                modifier = Modifier.padding(innerPadding),
+            )
+        }
+
+        composable(
+            route = SettingsDestinations.RULES,
+            enterTransition = { settingsForwardEnter() },
+            exitTransition = { settingsForwardExit() },
+            popEnterTransition = { settingsBackEnter() },
+            popExitTransition = { settingsBackExit() },
+        ) {
+            RulesScreen(
+                uiState = uiState,
+                onSaveHourlyRate = onSaveHourlyRate,
+                onSaveMultipliers = onSaveMultipliers,
+                onReverseEngineer = onReverseEngineer,
+                onModeSwitch = onModeSwitch,
+                onBack = { navController.popBackStack() },
+                modifier = Modifier.padding(innerPadding),
+            )
+        }
+
+        composable(
+            route = SettingsDestinations.PREFERENCES,
+            enterTransition = { settingsForwardEnter() },
+            exitTransition = { settingsForwardExit() },
+            popEnterTransition = { settingsBackEnter() },
+            popExitTransition = { settingsBackExit() },
+        ) {
+            PreferencesScreen(
+                uiState = uiState,
+                onCalendarStartDayChange = onCalendarStartDayChange,
+                onBack = { navController.popBackStack() },
+                modifier = Modifier.padding(innerPadding),
+            )
+        }
+
+        composable(
+            route = SettingsDestinations.DATA,
+            enterTransition = { settingsForwardEnter() },
+            exitTransition = { settingsForwardExit() },
+            popEnterTransition = { settingsBackEnter() },
+            popExitTransition = { settingsBackExit() },
+        ) {
+            DataManagementScreen(
+                onBack = { navController.popBackStack() },
+                modifier = Modifier.padding(innerPadding),
+            )
+        }
+
+        composable(
+            route = SettingsDestinations.ABOUT,
+            enterTransition = { settingsForwardEnter() },
+            exitTransition = { settingsForwardExit() },
+            popEnterTransition = { settingsBackEnter() },
+            popExitTransition = { settingsBackExit() },
+        ) {
+            AboutScreen(
+                updateUiState = updateUiState,
+                onCheckForUpdates = onCheckForUpdates,
+                onBack = { navController.popBackStack() },
+                modifier = Modifier.padding(innerPadding),
+            )
+        }
+    }
+}
+
+private fun AnimatedContentTransitionScope<*>.settingsForwardEnter() =
+    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
+
+private fun AnimatedContentTransitionScope<*>.settingsForwardExit() =
+    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
+
+private fun AnimatedContentTransitionScope<*>.settingsBackEnter() =
+    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
+
+private fun AnimatedContentTransitionScope<*>.settingsBackExit() =
+    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))

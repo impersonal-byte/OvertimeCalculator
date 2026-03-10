@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -83,6 +84,8 @@ import com.peter.overtimecalculator.domain.ZeroDecimal
 import com.peter.overtimecalculator.domain.toDisplayString
 import com.peter.overtimecalculator.domain.UpdateUiState
 import com.peter.overtimecalculator.ui.CalendarStartDay
+import com.peter.overtimecalculator.ui.settings.SettingsDestinations
+import com.peter.overtimecalculator.ui.settings.settingsGraph
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -91,7 +94,6 @@ import java.util.Locale
 import kotlinx.coroutines.withTimeoutOrNull
 
 private const val HomeRoute = "home"
-private const val SettingsRoute = "settings"
 private val placeholderHolidayCalendar = HolidayCalendar()
 private val monthFormatter = DateTimeFormatter.ofPattern("yyyy 年 M 月", Locale.CHINA)
 
@@ -153,9 +155,7 @@ fun OvertimeCalculatorApp(
         topBar = {
             AppTopBar(
                 currentRoute = currentRoute,
-                selectedMonth = uiState.selectedMonth,
-                onBack = { navController.popBackStack() },
-                onSettings = { navController.navigate(SettingsRoute) },
+                onSettings = { navController.navigate(SettingsDestinations.GRAPH_ROUTE) },
             )
         },
     ) { innerPadding ->
@@ -172,18 +172,18 @@ fun OvertimeCalculatorApp(
                     onDayClick = viewModel::openEditor,
                 )
             }
-            composable(SettingsRoute) {
-                SettingsScreen(
-                    uiState = uiState,
-                    updateUiState = updateUiState,
-                    onSaveHourlyRate = viewModel::updateManualHourlyRate,
-                    onSaveMultipliers = viewModel::updateMultipliers,
-                    onReverseEngineer = viewModel::reverseEngineerHourlyRate,
-                    onCheckForUpdates = appUpdateViewModel::checkForUpdates,
-                    onCalendarStartDayChange = viewModel::updateCalendarStartDay,
-                    onModeSwitch = tickHaptic::performTick,
-                )
-            }
+            settingsGraph(
+                navController = navController,
+                uiState = uiState,
+                updateUiState = updateUiState,
+                innerPadding = PaddingValues(0.dp), // Since we manage internal padding in the sub-screens now
+                onSaveHourlyRate = viewModel::updateManualHourlyRate,
+                onSaveMultipliers = viewModel::updateMultipliers,
+                onReverseEngineer = viewModel::reverseEngineerHourlyRate,
+                onCheckForUpdates = appUpdateViewModel::checkForUpdates,
+                onCalendarStartDayChange = viewModel::updateCalendarStartDay,
+                onModeSwitch = tickHaptic::performTick,
+            )
         }
     }
 
@@ -203,32 +203,17 @@ fun OvertimeCalculatorApp(
 @Composable
 private fun AppTopBar(
     currentRoute: String,
-    selectedMonth: YearMonth,
-    onBack: () -> Unit,
     onSettings: () -> Unit,
 ) {
+    if (currentRoute?.startsWith("settings") == true) return
+
     TopAppBar(
         title = {
-            Text(
-                text = if (currentRoute == HomeRoute) {
-                    "加班工资计算器"
-                } else {
-                    "设置"
-                },
-            )
-        },
-        navigationIcon = {
-            if (currentRoute == SettingsRoute) {
-                IconButton(onClick = onBack, modifier = Modifier.testTag("back_button")) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                }
-            }
+            Text("加班工资计算器")
         },
         actions = {
-            if (currentRoute == HomeRoute) {
-                IconButton(onClick = onSettings, modifier = Modifier.testTag("settings_button")) {
-                    Icon(Icons.Default.Settings, contentDescription = "设置")
-                }
+            IconButton(onClick = onSettings, modifier = Modifier.testTag("settings_button")) {
+                Icon(Icons.Default.Settings, contentDescription = "设置")
             }
         },
     )
