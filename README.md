@@ -83,8 +83,8 @@
 
 仓库现在包含两套工作流：
 
-- `Android CI`
-  在 `main` 提交和指向 `main` 的 PR 上运行，仅做校验，不生成正式发布包
+- `Android Verify (Manual)`
+  仅在 GitHub Actions 页面手动触发，用于你想临时做一次云端校验时使用，不会在普通 `push` 后自动运行
 - `Android Release`
   仅在推送 `v*` 标签时运行，自动做正式签名构建、创建/更新 GitHub Release、上传 APK
 
@@ -106,14 +106,15 @@ Windows PowerShell 生成 `SIGNING_KEY`：
 ```powershell
 git add .
 git commit -m "Release v1.6.0"
-git tag v1.6.0
 git push origin main
+git tag v1.6.0
 git push origin v1.6.0
 ```
 
 注意：
 
 - tag 去掉前缀 `v` 后，必须与 `app/build.gradle.kts` 中的 `appVersionName` 完全一致
+- 普通 `git push origin main` 不会触发自动构建；只有推送 `v*` 标签时才会自动生成正式发布包
 - 若存在 `docs/releases/v1.6.0.md`，工作流会优先用它作为 Release 正文
 - 若不存在对应文档，工作流会回退到 GitHub 自动生成 Release notes
 

@@ -1,12 +1,6 @@
-name: Android CI
+name: Android Verify (Manual)
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 concurrency:
