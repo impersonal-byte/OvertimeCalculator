@@ -106,7 +106,7 @@ fun SettingsMainScreen(
             item {
                 CategoryNavigationCard(
                     title = "数据管理",
-                    subtitle = "导出、备份与恢复功能预留",
+                    subtitle = "导出本月 CSV 数据并通过系统分享发送",
                     icon = Icons.Default.Settings,
                     onClick = onNavigateToData,
                     testTag = "nav_data",

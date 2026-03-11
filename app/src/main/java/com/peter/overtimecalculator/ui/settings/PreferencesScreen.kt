@@ -1,13 +1,21 @@
 package com.peter.overtimecalculator.ui.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -19,11 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import com.peter.overtimecalculator.domain.AppTheme
 import com.peter.overtimecalculator.domain.SeedColor
 import com.peter.overtimecalculator.ui.AppUiState
@@ -52,13 +55,14 @@ fun PreferencesScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("settings_preferences_screen")
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item { Spacer(modifier = Modifier.height(4.dp)) }
             item {
-                SettingCard("日历展示", "选择日历每周的起始日，修改后会立即同步到首页。") {
+                SettingCard("日历显示", "选择日历每周的起始日，修改后会立刻同步到首页。") {
                     SingleChoiceSegmentedButtonRow(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -73,25 +77,25 @@ fun PreferencesScreen(
                                     count = CalendarStartDay.entries.size,
                                 ),
                             ) {
-                                Text(
-                                    if (option == CalendarStartDay.MONDAY) {
-                                        "周一为首日"
-                                    } else {
-                                        "周日为首日"
-                                    },
-                                )
+                                Text(if (option == CalendarStartDay.MONDAY) "周一为首日" else "周日为首日")
                             }
                         }
                     }
                 }
             }
-            
+
             item {
                 SettingCard("深浅模式", "选择使用跟随系统、始终浅色或始终深色的界面模式。") {
                     SingleChoiceSegmentedButtonRow(
-                        modifier = Modifier.fillMaxWidth().testTag("app_theme_row"),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("app_theme_row"),
                     ) {
-                        val options = listOf(AppTheme.SYSTEM to "跟随系统", AppTheme.LIGHT to "浅色", AppTheme.DARK to "深色")
+                        val options = listOf(
+                            AppTheme.SYSTEM to "跟随系统",
+                            AppTheme.LIGHT to "浅色",
+                            AppTheme.DARK to "深色",
+                        )
                         options.forEachIndexed { index, option ->
                             SegmentedButton(
                                 selected = uiState.appTheme == option.first,
@@ -107,11 +111,11 @@ fun PreferencesScreen(
 
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 item {
-                    SettingCard("动态配色", "提取当前壁纸的主色调融入应用界面的背景中。关闭后可使用原生基调色。") {
+                    SettingCard("动态配色", "提取当前壁纸的主色调融入应用界面。关闭后可使用原生种子色。") {
                         Switch(
                             checked = uiState.useDynamicColor,
-                            onCheckedChange = { onUseDynamicColorChange(it) },
-                            modifier = Modifier.testTag("dynamic_color_switch")
+                            onCheckedChange = onUseDynamicColorChange,
+                            modifier = Modifier.testTag("dynamic_color_switch"),
                         )
                     }
                 }
@@ -119,10 +123,10 @@ fun PreferencesScreen(
 
             if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S || !uiState.useDynamicColor) {
                 item {
-                    SettingCard("个性基调色", "为应用指定一套原生的色彩配置底座。") {
-                        androidx.compose.foundation.layout.Row(
+                    SettingCard("个性化种子色", "为应用指定一套原生的色彩底座。") {
+                        Row(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             val seedColorMapping = mapOf(
                                 SeedColor.CLAY to Color(0xFF9A3412),
@@ -133,14 +137,14 @@ fun PreferencesScreen(
                             SeedColor.entries.forEach { seed ->
                                 val color = seedColorMapping[seed] ?: Color.Gray
                                 val isSelected = uiState.seedColor == seed
-                                androidx.compose.foundation.layout.Box(
+                                Box(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .background(color, CircleShape)
                                         .border(
                                             width = if (isSelected) 3.dp else 0.dp,
-                                            color = if (isSelected) androidx.compose.material3.MaterialTheme.colorScheme.onSurface else Color.Transparent,
-                                            shape = CircleShape
+                                            color = if (isSelected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                                            shape = CircleShape,
                                         )
                                         .clickable { onSeedColorChange(seed) }
                                 )

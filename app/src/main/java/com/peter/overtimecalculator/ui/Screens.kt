@@ -104,10 +104,12 @@ private const val HomeRoute = "home"
 private val placeholderHolidayCalendar = HolidayCalendar()
 private val monthFormatter = DateTimeFormatter.ofPattern("yyyy 年 M 月", Locale.CHINA)
 
+/*
 private enum class HourlyRateInputMode(val label: String) {
     MANUAL("手动输入"),
     REVERSE("总额反推"),
 }
+*/
 
 private const val DurationStepMinutes = 30
 private const val MaxOvertimeMinutes = 16 * 60
@@ -1000,6 +1002,7 @@ private fun PresetDurationChip(label: String, selected: Boolean, tag: String, on
     )
 }
 
+/*
 @Composable
 private fun MultiplierBadge(label: String, value: String) {
     Surface(
@@ -1372,6 +1375,7 @@ private fun updateStatusLabel(updateState: UpdateUiState, awaitingInstallPermiss
     }
 }
 
+*/
 private fun DayOfWeek.toCalendarOffset(calendarStartDay: CalendarStartDay): Int = when (calendarStartDay) {
     CalendarStartDay.MONDAY -> when (this) {
         DayOfWeek.MONDAY -> 0
