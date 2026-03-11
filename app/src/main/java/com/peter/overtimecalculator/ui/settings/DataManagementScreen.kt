@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -43,12 +43,14 @@ fun DataManagementScreen(
             item { Spacer(modifier = Modifier.height(4.dp)) }
             item {
                 SettingCard(
-                    title = "导出本月数据备份",
-                    subtitle = "将当前的打卡流水导出为 CSV 电子表格。支持使用 Excel 查看，亦可通过原生共享发送给上级或 HR 进行复核。",
+                    title = "导出本月数据",
+                    subtitle = "将当前月的加班与调休明细导出为 CSV 表格，并通过系统分享发送。",
                 ) {
-                    androidx.compose.material3.Button(
+                    Button(
                         onClick = onExportDataClick,
-                        modifier = Modifier.fillMaxWidth().testTag("export_csv_btn")
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("export_csv_btn"),
                     ) {
                         Text("导出本月 CSV 数据")
                     }

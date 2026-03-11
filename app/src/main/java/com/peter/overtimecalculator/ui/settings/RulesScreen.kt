@@ -85,6 +85,7 @@ fun RulesScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("settings_rules_screen")
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -98,6 +99,11 @@ fun RulesScreen(
                             .testTag("hourly_mode_row"),
                     ) {
                         HourlyRateInputMode.entries.forEachIndexed { index, mode ->
+                            val modeTag = if (mode == HourlyRateInputMode.MANUAL) {
+                                "hourly_mode_manual"
+                            } else {
+                                "hourly_mode_reverse"
+                            }
                             SegmentedButton(
                                 selected = selectedMode == mode,
                                 onClick = {
@@ -110,6 +116,7 @@ fun RulesScreen(
                                     index = index,
                                     count = HourlyRateInputMode.entries.size,
                                 ),
+                                modifier = Modifier.testTag(modeTag),
                             ) {
                                 Text(mode.label)
                             }

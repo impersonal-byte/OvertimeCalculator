@@ -3,7 +3,6 @@ package com.peter.overtimecalculator
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -14,6 +13,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.FileInputStream
+import java.time.LocalDate
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -36,18 +36,19 @@ class MainFlowTest {
         composeRule.onNodeWithTag("home_screen").assertIsDisplayed()
         composeRule.onNodeWithTag("summary_card").assertIsDisplayed()
         composeRule.onNodeWithTag("calendar_grid").assertIsDisplayed()
-        composeRule.onNodeWithTag("day_card_2026-03-03").assertIsDisplayed()
+        composeRule.onNodeWithTag(dayCardTag(editableDate())).assertIsDisplayed()
     }
 
     @Test
     fun canNavigateToSettingsAndBack() {
         composeRule.onNodeWithTag("settings_button").performClick()
-        waitForTag("settings_screen")
-        composeRule.onNodeWithTag("settings_screen").assertIsDisplayed()
-        composeRule.onNodeWithTag("hourly_mode_row").assertIsDisplayed()
-        composeRule.onNodeWithTag("edit_multipliers_button").assertIsDisplayed()
-        composeRule.onNodeWithTag("current_version_text").assertIsDisplayed()
-        composeRule.onNodeWithTag("check_update_button").assertIsDisplayed()
+        waitForTag("settings_main_screen")
+
+        composeRule.onNodeWithTag("settings_main_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav_rules").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav_preferences").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav_data").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav_about").assertIsDisplayed()
 
         composeRule.onNodeWithTag("back_button").performClick()
         waitForTag("home_screen")
@@ -56,8 +57,7 @@ class MainFlowTest {
 
     @Test
     fun reverseModeOnlyShowsReversePanel() {
-        composeRule.onNodeWithTag("settings_button").performClick()
-        waitForTag("settings_screen")
+        openRulesScreen()
 
         composeRule.onNodeWithTag("hourly_mode_reverse").performClick()
         waitForTag("reverse_panel")
@@ -67,8 +67,7 @@ class MainFlowTest {
 
     @Test
     fun canSaveOvertimeEntryFromCalendarAndShowDecimalHours() {
-        composeRule.onNodeWithTag("settings_button").performClick()
-        waitForTag("settings_screen")
+        openRulesScreen()
         ensureManualMode()
 
         composeRule.onNodeWithTag("hourly_rate_input").performTextClearance()
@@ -77,38 +76,39 @@ class MainFlowTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("back_button").performClick()
+        waitForTag("settings_main_screen")
+        composeRule.onNodeWithTag("back_button").performClick()
         waitForTag("home_screen")
 
-        composeRule.onNodeWithTag("day_card_2026-03-03").performClick()
+        val editableDate = editableDate()
+        composeRule.onNodeWithTag(dayCardTag(editableDate)).performClick()
         waitForTag("day_editor_sheet")
 
         composeRule.onNodeWithTag("clear_duration").performClick()
-        composeRule.onNodeWithTag("add_one_hour").performClick()
-        composeRule.onNodeWithTag("add_one_hour").performClick()
+        composeRule.onNodeWithTag("preset_120").performClick()
         composeRule.onNodeWithTag("editor_save").performClick()
 
         composeRule.waitUntil(10_000) {
-            composeRule.onAllNodes(hasTag("day_editor_sheet")).fetchSemanticsNodes().isEmpty()
+            composeRule.onAllNodesWithTag("day_editor_sheet").fetchSemanticsNodes().isEmpty()
         }
-        composeRule.onNodeWithTag("day_card_2026-03-03").assertTextContains("2.0h")
+        composeRule.onNodeWithTag(dayCardTag(editableDate)).assertTextContains("2.0h")
     }
 
     @Test
     fun reverseEngineerUpdatesRateSourceChip() {
-        composeRule.onNodeWithTag("day_card_2026-03-03").performClick()
+        val editableDate = editableDate()
+
+        composeRule.onNodeWithTag(dayCardTag(editableDate)).performClick()
         waitForTag("day_editor_sheet")
 
         composeRule.onNodeWithTag("clear_duration").performClick()
-        composeRule.onNodeWithTag("add_one_hour").performClick()
-        composeRule.onNodeWithTag("add_one_hour").performClick()
+        composeRule.onNodeWithTag("preset_120").performClick()
         composeRule.onNodeWithTag("editor_save").performClick()
         composeRule.waitUntil(10_000) {
-            composeRule.onAllNodes(hasTag("day_editor_sheet")).fetchSemanticsNodes().isEmpty()
+            composeRule.onAllNodesWithTag("day_editor_sheet").fetchSemanticsNodes().isEmpty()
         }
 
-        composeRule.onNodeWithTag("settings_button").performClick()
-        waitForTag("settings_screen")
-
+        openRulesScreen()
         composeRule.onNodeWithTag("hourly_mode_reverse").performClick()
         waitForTag("reverse_pay_input")
         composeRule.onNodeWithTag("reverse_pay_input").performTextInput("300")
@@ -116,14 +116,15 @@ class MainFlowTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("back_button").performClick()
+        waitForTag("settings_main_screen")
+        composeRule.onNodeWithTag("back_button").performClick()
         waitForTag("home_screen")
-        composeRule.onNodeWithText("时薪来源：总额反推", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("当前时薪·反推", substring = true).assertIsDisplayed()
     }
 
     @Test
     fun multipliersAreEditedInBottomSheet() {
-        composeRule.onNodeWithTag("settings_button").performClick()
-        waitForTag("settings_screen")
+        openRulesScreen()
 
         composeRule.onNodeWithTag("edit_multipliers_button").performClick()
         waitForTag("multiplier_editor_sheet")
@@ -136,6 +137,36 @@ class MainFlowTest {
         composeRule.onNodeWithText("1.80x", substring = true).assertIsDisplayed()
     }
 
+    @Test
+    fun dataManagementShowsCsvExportEntry() {
+        composeRule.onNodeWithTag("settings_button").performClick()
+        waitForTag("settings_main_screen")
+
+        composeRule.onNodeWithTag("nav_data").performClick()
+        waitForTag("settings_data_screen")
+        composeRule.onNodeWithTag("settings_data_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("export_csv_btn").assertIsDisplayed()
+    }
+
+    @Test
+    fun aboutScreenShowsVersionAndUpdateControls() {
+        composeRule.onNodeWithTag("settings_button").performClick()
+        waitForTag("settings_main_screen")
+
+        composeRule.onNodeWithTag("nav_about").performClick()
+        waitForTag("settings_about_screen")
+        composeRule.onNodeWithTag("settings_about_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("current_version_text").assertIsDisplayed()
+        composeRule.onNodeWithTag("check_update_button").assertIsDisplayed()
+    }
+
+    private fun openRulesScreen() {
+        composeRule.onNodeWithTag("settings_button").performClick()
+        waitForTag("settings_main_screen")
+        composeRule.onNodeWithTag("nav_rules").performClick()
+        waitForTag("settings_rules_screen")
+    }
+
     private fun ensureManualMode() {
         if (composeRule.onAllNodesWithTag("hourly_rate_input").fetchSemanticsNodes().isEmpty()) {
             composeRule.onNodeWithTag("hourly_mode_manual").performClick()
@@ -145,12 +176,17 @@ class MainFlowTest {
 
     private fun waitForTag(tag: String) {
         composeRule.waitUntil(10_000) {
-            composeRule.onAllNodes(hasTag(tag)).fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
         }
     }
-}
 
-private fun hasTag(tag: String) = hasTestTag(tag)
+    private fun editableDate(): LocalDate {
+        val today = LocalDate.now()
+        return today.withDayOfMonth(minOf(3, today.dayOfMonth))
+    }
+
+    private fun dayCardTag(date: LocalDate): String = "day_card_$date"
+}
 
 private fun runShellCommand(command: String) {
     InstrumentationRegistry.getInstrumentation().uiAutomation
