@@ -1,7 +1,7 @@
 import java.util.Properties
 
-val appVersionCode = 10
-val appVersionName = "1.6.0"
+val appVersionCode = 11
+val appVersionName = "1.6.1"
 val localProperties = Properties().apply {
     val localPropertiesFile = rootProject.file("local.properties")
     if (localPropertiesFile.exists()) {
@@ -117,7 +117,9 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
+    testImplementation("androidx.test:core:1.6.1")
     testImplementation("org.json:json:20240303")
+    testImplementation("org.robolectric:robolectric:4.14.1")
 
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")

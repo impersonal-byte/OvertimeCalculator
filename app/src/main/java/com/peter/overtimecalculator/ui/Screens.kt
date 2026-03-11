@@ -1253,7 +1253,7 @@ private fun SettingsScreen(
         item {
             SettingCard("节假日说明", "优先级：手动覆盖 > 内置节假日/调休 > 周末 > 普通工作日。") {
                 Text(
-                    "应用内置节假日基线数据，并会通过 Timor 中国节假日 API 静默刷新当前年和下一年规则；当远端无有效数据时，会自动回退到内置基线与周末规则。任何一天都可以在首页录入时手动覆盖类型。",
+                    "应用内置节假日基线数据，并会通过 api.haoshenqi.top/holiday 静默刷新当前年和下一年规则；当远端无有效数据时，会自动回退到内置基线与周末规则。任何一天都可以在首页录入时手动覆盖类型。",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

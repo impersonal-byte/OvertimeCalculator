@@ -41,6 +41,7 @@ class HolidayRulesRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val currentYearProvider: () -> Int = { LocalDate.now().year },
     private val remoteUrlTemplate: String = DEFAULT_REMOTE_URL_TEMPLATE,
+    private val remoteReader: (String) -> String = ::readRemoteHolidayJson,
 ) {
     private val dataStore = context.holidayRulesDataStore
     private val baselineRules = context.assets.open(BASELINE_ASSET_PATH).bufferedReader().use { reader ->
@@ -71,8 +72,10 @@ class HolidayRulesRepository(
 
     suspend fun refreshRemoteRules(): HolidayRefreshResult {
         return withContext(ioDispatcher) {
+            val fetchedAt = System.currentTimeMillis()
+            val updatedAt = Instant.ofEpochMilli(fetchedAt).toString()
             val overlaySnapshot = try {
-                fetchRemoteOverlaySnapshot()
+                fetchRemoteOverlaySnapshot(updatedAt)
             } catch (_: Exception) {
                 return@withContext HolidayRefreshResult.Failed(retryable = true)
             }
@@ -80,12 +83,11 @@ class HolidayRulesRepository(
                 return@withContext HolidayRefreshResult.Skipped
             }
 
-            val fetchedAt = System.currentTimeMillis()
             val serializedOverlay = HolidayRulesJsonSerializer.serialize(overlaySnapshot)
             dataStore.edit { preferences ->
                 preferences[KEY_REMOTE_JSON] = serializedOverlay
                 preferences[KEY_FETCHED_AT_EPOCH_MILLIS] = fetchedAt
-                preferences[KEY_REMOTE_UPDATED_AT] = overlaySnapshot.updatedAt
+                preferences[KEY_REMOTE_UPDATED_AT] = updatedAt
             }
             _rules.value = mergeSnapshots(baselineRules, overlaySnapshot)
             HolidayRefreshResult.Updated
@@ -110,7 +112,7 @@ class HolidayRulesRepository(
         }
     }
 
-    private fun fetchRemoteOverlaySnapshot(): HolidayRulesSnapshot {
+    private fun fetchRemoteOverlaySnapshot(updatedAt: String): HolidayRulesSnapshot {
         val currentYear = currentYearProvider()
         val remoteYears = linkedMapOf<Int, HolidayYearRules>()
 
@@ -121,7 +123,7 @@ class HolidayRulesRepository(
                 continue
             }
             val parsedYearRules = try {
-                HolidayTimorApiParser.parseYear(json)
+                HolidayHaoshenqiApiParser.parse(json)
             } catch (_: Exception) {
                 continue
             }
@@ -132,28 +134,14 @@ class HolidayRulesRepository(
 
         return HolidayRulesSnapshot(
             schemaVersion = baselineRules.schemaVersion,
-            updatedAt = Instant.now().toString(),
+            updatedAt = updatedAt,
             years = remoteYears,
         )
     }
 
     private fun fetchRemoteJson(year: Int): String {
         val remoteUrl = remoteUrlTemplate.format(year)
-        val connection = (URL(remoteUrl).openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            connectTimeout = 10_000
-            readTimeout = 10_000
-            setRequestProperty("Accept", "application/json")
-            setRequestProperty("User-Agent", "JiaxinHolidaySync/1.0")
-        }
-
-        return try {
-            val statusCode = connection.responseCode
-            require(statusCode in 200..299) { "Holiday rules request failed: $statusCode" }
-            connection.inputStream.bufferedReader().use { it.readText() }
-        } finally {
-            connection.disconnect()
-        }
+        return remoteReader(remoteUrl)
     }
 
     private fun mergeSnapshots(
@@ -170,7 +158,7 @@ class HolidayRulesRepository(
     companion object {
         const val BASELINE_ASSET_PATH = "holidays/cn_mainland.json"
         const val DEFAULT_REMOTE_URL_TEMPLATE =
-            "https://timor.tech/api/holiday/year/%d/?type=Y&week=Y"
+            "https://api.haoshenqi.top/holiday?date=%d"
         private const val REMOTE_FORWARD_YEARS = 1
 
         private val KEY_REMOTE_JSON = stringPreferencesKey("remote_json")
@@ -181,4 +169,22 @@ class HolidayRulesRepository(
 
 private fun HolidayYearRules.hasMeaningfulOverrides(): Boolean {
     return holidayDates.isNotEmpty() || workingDates.isNotEmpty()
+}
+
+private fun readRemoteHolidayJson(remoteUrl: String): String {
+    val connection = (URL(remoteUrl).openConnection() as HttpURLConnection).apply {
+        requestMethod = "GET"
+        connectTimeout = 10_000
+        readTimeout = 10_000
+        setRequestProperty("Accept", "application/json")
+        setRequestProperty("User-Agent", "JiaxinHolidaySync/1.0")
+    }
+
+    return try {
+        val statusCode = connection.responseCode
+        require(statusCode in 200..299) { "Holiday rules request failed: $statusCode" }
+        connection.inputStream.bufferedReader().use { it.readText() }
+    } finally {
+        connection.disconnect()
+    }
 }
