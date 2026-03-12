@@ -1,5 +1,6 @@
 package com.peter.overtimecalculator.ui.settings
 
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -61,6 +62,7 @@ fun PreferencesScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item { Spacer(modifier = Modifier.height(4.dp)) }
+
             item {
                 SettingCard("日历显示", "选择日历每周的起始日，修改后会立刻同步到首页。") {
                     SingleChoiceSegmentedButtonRow(
@@ -70,6 +72,13 @@ fun PreferencesScreen(
                     ) {
                         CalendarStartDay.entries.forEachIndexed { index, option ->
                             SegmentedButton(
+                                modifier = Modifier.testTag(
+                                    if (option == CalendarStartDay.MONDAY) {
+                                        "calendar_start_monday"
+                                    } else {
+                                        "calendar_start_sunday"
+                                    },
+                                ),
                                 selected = uiState.calendarStartDay == option,
                                 onClick = { onCalendarStartDayChange(option) },
                                 shape = SegmentedButtonDefaults.itemShape(
@@ -98,6 +107,13 @@ fun PreferencesScreen(
                         )
                         options.forEachIndexed { index, option ->
                             SegmentedButton(
+                                modifier = Modifier.testTag(
+                                    when (option.first) {
+                                        AppTheme.SYSTEM -> "app_theme_system"
+                                        AppTheme.LIGHT -> "app_theme_light"
+                                        AppTheme.DARK -> "app_theme_dark"
+                                    },
+                                ),
                                 selected = uiState.appTheme == option.first,
                                 onClick = { onAppThemeChange(option.first) },
                                 shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
@@ -109,7 +125,7 @@ fun PreferencesScreen(
                 }
             }
 
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 item {
                     SettingCard("动态配色", "提取当前壁纸的主色调融入应用界面。关闭后可使用原生种子色。") {
                         Switch(
@@ -121,9 +137,13 @@ fun PreferencesScreen(
                 }
             }
 
-            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S || !uiState.useDynamicColor) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !uiState.useDynamicColor) {
                 item {
-                    SettingCard("个性化种子色", "为应用指定一套原生的色彩底座。") {
+                    SettingCard(
+                        title = "个性化种子色",
+                        subtitle = "为应用指定一套原生的配色底座。",
+                        modifier = Modifier.testTag("seed_color_section"),
+                    ) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.fillMaxWidth(),
@@ -147,6 +167,7 @@ fun PreferencesScreen(
                                             shape = CircleShape,
                                         )
                                         .clickable { onSeedColorChange(seed) }
+                                        .testTag("seed_color_${seed.name.lowercase()}"),
                                 )
                             }
                         }

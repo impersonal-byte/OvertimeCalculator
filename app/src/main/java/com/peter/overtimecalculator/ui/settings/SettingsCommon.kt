@@ -50,9 +50,13 @@ internal fun SettingsTopBar(
 internal fun SettingCard(
     title: String,
     subtitle: String,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    Card(shape = RoundedCornerShape(28.dp)) {
+    Card(
+        shape = RoundedCornerShape(28.dp),
+        modifier = modifier,
+    ) {
         Column(modifier = Modifier.fillMaxWidth().padding(18.dp)) {
             Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(6.dp))

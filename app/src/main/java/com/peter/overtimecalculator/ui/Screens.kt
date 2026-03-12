@@ -57,6 +57,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -126,6 +127,8 @@ fun OvertimeCalculatorApp(
     val navController = rememberNavController()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val updateUiState by appUpdateViewModel.uiState.collectAsStateWithLifecycle()
+    val latestUiState = rememberUpdatedState(uiState)
+    val latestUpdateUiState = rememberUpdatedState(updateUiState)
     val snackbarHostState = remember { SnackbarHostState() }
     val tickHaptic = rememberTickHapticFeedback()
     val context = LocalContext.current
@@ -189,7 +192,7 @@ fun OvertimeCalculatorApp(
         ) {
             composable(HomeRoute) {
                 HomeScreen(
-                    uiState = uiState,
+                    uiState = latestUiState.value,
                     onPreviousMonth = viewModel::previousMonth,
                     onNextMonth = viewModel::nextMonth,
                     onDayClick = viewModel::openEditor,
@@ -197,8 +200,8 @@ fun OvertimeCalculatorApp(
             }
             settingsGraph(
                 navController = navController,
-                uiState = uiState,
-                updateUiState = updateUiState,
+                uiStateState = latestUiState,
+                updateUiStateState = latestUpdateUiState,
                 innerPadding = PaddingValues(0.dp), // Since we manage internal padding in the sub-screens now
                 onSaveHourlyRate = viewModel::updateManualHourlyRate,
                 onSaveMultipliers = viewModel::updateMultipliers,

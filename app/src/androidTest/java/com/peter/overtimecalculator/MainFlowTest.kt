@@ -1,7 +1,14 @@
 package com.peter.overtimecalculator
 
+import android.os.Build
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -14,6 +21,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.FileInputStream
 import java.time.LocalDate
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -160,11 +168,62 @@ class MainFlowTest {
         composeRule.onNodeWithTag("check_update_button").assertIsDisplayed()
     }
 
+    @Test
+    fun preferencesCalendarStartSelectionReflectsLatestState() {
+        openPreferencesScreen()
+
+        composeRule.onNodeWithTag("calendar_start_sunday").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("calendar_start_sunday").assertIsSelected()
+        composeRule.onNodeWithTag("calendar_start_monday").assertIsNotSelected()
+    }
+
+    @Test
+    fun preferencesThemeSelectionReflectsLatestState() {
+        openPreferencesScreen()
+
+        composeRule.onNodeWithTag("app_theme_light").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("app_theme_light").assertIsSelected()
+        composeRule.onNodeWithTag("app_theme_system").assertIsNotSelected()
+
+        composeRule.onNodeWithTag("app_theme_dark").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("app_theme_dark").assertIsSelected()
+        composeRule.onNodeWithTag("app_theme_light").assertIsNotSelected()
+    }
+
+    @Test
+    fun dynamicColorSwitchAndSeedSectionStayInSync() {
+        assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+        openPreferencesScreen()
+
+        val switchInitiallyOn = isSwitchOn("dynamic_color_switch")
+        composeRule.onNodeWithTag("dynamic_color_switch").performClick()
+        composeRule.waitForIdle()
+
+        if (switchInitiallyOn) {
+            composeRule.onNodeWithTag("dynamic_color_switch").assertIsOff()
+            composeRule.onNodeWithTag("seed_color_section").assertIsDisplayed()
+        } else {
+            composeRule.onNodeWithTag("dynamic_color_switch").assertIsOn()
+            composeRule.onAllNodesWithTag("seed_color_section").assertCountEquals(0)
+        }
+    }
+
     private fun openRulesScreen() {
         composeRule.onNodeWithTag("settings_button").performClick()
         waitForTag("settings_main_screen")
         composeRule.onNodeWithTag("nav_rules").performClick()
         waitForTag("settings_rules_screen")
+    }
+
+    private fun openPreferencesScreen() {
+        composeRule.onNodeWithTag("settings_button").performClick()
+        waitForTag("settings_main_screen")
+        composeRule.onNodeWithTag("nav_preferences").performClick()
+        waitForTag("settings_preferences_screen")
     }
 
     private fun ensureManualMode() {
@@ -186,6 +245,11 @@ class MainFlowTest {
     }
 
     private fun dayCardTag(date: LocalDate): String = "day_card_$date"
+
+    private fun isSwitchOn(tag: String): Boolean {
+        val node = composeRule.onNodeWithTag(tag).fetchSemanticsNode()
+        return node.config[SemanticsProperties.ToggleableState] == ToggleableState.On
+    }
 }
 
 private fun runShellCommand(command: String) {

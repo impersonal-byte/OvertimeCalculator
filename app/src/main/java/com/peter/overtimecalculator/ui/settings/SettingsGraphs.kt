@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
@@ -26,8 +27,8 @@ object SettingsDestinations {
 
 fun NavGraphBuilder.settingsGraph(
     navController: NavController,
-    uiState: AppUiState,
-    updateUiState: AppUpdateUiState,
+    uiStateState: State<AppUiState>,
+    updateUiStateState: State<AppUpdateUiState>,
     innerPadding: PaddingValues,
     onSaveHourlyRate: (String) -> Unit,
     onSaveMultipliers: (String, String, String) -> Unit,
@@ -51,6 +52,8 @@ fun NavGraphBuilder.settingsGraph(
             popEnterTransition = { settingsBackEnter() },
             popExitTransition = { settingsBackExit() },
         ) {
+            val uiState = uiStateState.value
+            val updateUiState = updateUiStateState.value
             SettingsMainScreen(
                 uiState = uiState,
                 updateUiState = updateUiState,
@@ -70,6 +73,7 @@ fun NavGraphBuilder.settingsGraph(
             popEnterTransition = { settingsBackEnter() },
             popExitTransition = { settingsBackExit() },
         ) {
+            val uiState = uiStateState.value
             RulesScreen(
                 uiState = uiState,
                 onSaveHourlyRate = onSaveHourlyRate,
@@ -88,6 +92,7 @@ fun NavGraphBuilder.settingsGraph(
             popEnterTransition = { settingsBackEnter() },
             popExitTransition = { settingsBackExit() },
         ) {
+            val uiState = uiStateState.value
             PreferencesScreen(
                 uiState = uiState,
                 onCalendarStartDayChange = onCalendarStartDayChange,
@@ -120,6 +125,7 @@ fun NavGraphBuilder.settingsGraph(
             popEnterTransition = { settingsBackEnter() },
             popExitTransition = { settingsBackExit() },
         ) {
+            val updateUiState = updateUiStateState.value
             AboutScreen(
                 updateUiState = updateUiState,
                 onCheckForUpdates = onCheckForUpdates,
