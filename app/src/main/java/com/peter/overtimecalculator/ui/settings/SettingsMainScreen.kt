@@ -1,8 +1,10 @@
 package com.peter.overtimecalculator.ui.settings
 
+import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,12 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MonetizationOn
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
@@ -31,18 +33,21 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.peter.overtimecalculator.domain.AppTheme
 import com.peter.overtimecalculator.domain.HourlyRateSource
 import com.peter.overtimecalculator.domain.ZeroDecimal
 import com.peter.overtimecalculator.domain.toDisplayString
 import com.peter.overtimecalculator.ui.AppUiState
 import com.peter.overtimecalculator.ui.AppUpdateUiState
 import com.peter.overtimecalculator.ui.CalendarStartDay
+import com.peter.overtimecalculator.ui.theme.ThemePaletteSpecs
 
 @Composable
 fun SettingsMainScreen(
     uiState: AppUiState,
     updateUiState: AppUpdateUiState,
     onBack: () -> Unit,
+    onNavigateToTheme: () -> Unit,
     onNavigateToRules: () -> Unit,
     onNavigateToPreferences: () -> Unit,
     onNavigateToData: () -> Unit,
@@ -73,58 +78,64 @@ fun SettingsMainScreen(
         },
         modifier = modifier,
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .testTag("settings_main_screen")
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            item { Spacer(modifier = Modifier.height(4.dp)) }
-
-            item {
-                CategoryNavigationCard(
-                    title = "薪酬与规则",
-                    subtitle = "当前时薪 $currentRateText ($rateSourceText) · 工作日 ${uiState.config.weekdayRate.toDisplayString()}x",
-                    icon = Icons.Default.MonetizationOn,
-                    onClick = onNavigateToRules,
-                    testTag = "nav_rules",
-                )
-            }
-
-            item {
-                CategoryNavigationCard(
-                    title = "偏好设置",
-                    subtitle = startDayText,
-                    icon = Icons.Default.Tune,
-                    onClick = onNavigateToPreferences,
-                    testTag = "nav_preferences",
-                )
-            }
-
-            item {
-                CategoryNavigationCard(
-                    title = "数据管理",
-                    subtitle = "导出本月 CSV 数据并通过系统分享发送",
-                    icon = Icons.Default.Settings,
-                    onClick = onNavigateToData,
-                    testTag = "nav_data",
-                )
-            }
-
-            item {
-                CategoryNavigationCard(
-                    title = "关于加薪",
-                    subtitle = aboutStatusSubtitle(updateUiState),
-                    icon = Icons.Default.Info,
-                    onClick = onNavigateToAbout,
-                    testTag = "nav_about",
-                )
-            }
-
-            item { Spacer(modifier = Modifier.height(16.dp)) }
+        LazySettingsColumn(innerPadding = innerPadding) {
+            CategoryNavigationCard(
+                title = "主题与外观",
+                subtitle = themeSubtitle(uiState),
+                icon = Icons.Default.Palette,
+                onClick = onNavigateToTheme,
+                testTag = "nav_theme",
+            )
+            CategoryNavigationCard(
+                title = "薪资与规则",
+                subtitle = "当前时薪 $currentRateText ($rateSourceText) · 工作日 ${uiState.config.weekdayRate.toDisplayString()}x",
+                icon = Icons.Default.MonetizationOn,
+                onClick = onNavigateToRules,
+                testTag = "nav_rules",
+            )
+            CategoryNavigationCard(
+                title = "偏好设置",
+                subtitle = startDayText,
+                icon = Icons.Default.Tune,
+                onClick = onNavigateToPreferences,
+                testTag = "nav_preferences",
+            )
+            CategoryNavigationCard(
+                title = "数据管理",
+                subtitle = "导出本月 CSV 数据并通过系统分享发送",
+                icon = Icons.Default.Settings,
+                onClick = onNavigateToData,
+                testTag = "nav_data",
+            )
+            CategoryNavigationCard(
+                title = "关于加薪",
+                subtitle = aboutStatusSubtitle(updateUiState),
+                icon = Icons.Default.Info,
+                onClick = onNavigateToAbout,
+                testTag = "nav_about",
+            )
         }
+    }
+}
+
+@Composable
+private fun LazySettingsColumn(
+    innerPadding: androidx.compose.foundation.layout.PaddingValues,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    androidx.compose.foundation.lazy.LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag("settings_main_screen")
+            .padding(innerPadding)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item { Spacer(modifier = Modifier.height(4.dp)) }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
+        }
+        item { Spacer(modifier = Modifier.height(16.dp)) }
     }
 }
 
@@ -182,5 +193,19 @@ private fun CategoryNavigationCard(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+private fun themeSubtitle(uiState: AppUiState): String {
+    val mode = when (uiState.appTheme) {
+        AppTheme.SYSTEM -> "自动"
+        AppTheme.LIGHT -> "浅色"
+        AppTheme.DARK -> "深色"
+    }
+    val palette = ThemePaletteSpecs.fromSeedColor(uiState.seedColor).displayName
+    return if (uiState.useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        "$mode · 动态色彩"
+    } else {
+        "$mode · $palette"
     }
 }

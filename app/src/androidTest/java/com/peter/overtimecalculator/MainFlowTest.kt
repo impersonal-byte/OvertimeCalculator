@@ -45,6 +45,7 @@ class MainFlowTest {
         waitForTag("settings_main_screen")
 
         composeRule.onNodeWithTag("settings_main_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav_theme").assertIsDisplayed()
         composeRule.onNodeWithTag("nav_rules").assertIsDisplayed()
         composeRule.onNodeWithTag("nav_preferences").assertIsDisplayed()
         composeRule.onNodeWithTag("nav_data").assertIsDisplayed()
@@ -158,6 +159,38 @@ class MainFlowTest {
         composeRule.onNodeWithTag("settings_about_screen").assertIsDisplayed()
         composeRule.onNodeWithTag("current_version_text").assertIsDisplayed()
         composeRule.onNodeWithTag("check_update_button").assertIsDisplayed()
+    }
+
+    @Test
+    fun themeSettingsShowsPreviewCardsAndPaletteGrid() {
+        composeRule.onNodeWithTag("settings_button").performClick()
+        waitForTag("settings_main_screen")
+
+        composeRule.onNodeWithTag("nav_theme").performClick()
+        waitForTag("settings_theme_screen")
+
+        composeRule.onNodeWithTag("settings_theme_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("theme_overview_card").assertIsDisplayed()
+        composeRule.onNodeWithTag("theme_overview_mode").assertIsDisplayed()
+        composeRule.onNodeWithTag("theme_overview_palette").assertIsDisplayed()
+        composeRule.onNodeWithTag("theme_mode_light").assertIsDisplayed()
+        composeRule.onNodeWithTag("theme_mode_dark").assertIsDisplayed()
+        composeRule.onNodeWithTag("theme_mode_system").assertIsDisplayed()
+        composeRule.onNodeWithTag("dynamic_color_switch").assertIsDisplayed()
+        composeRule.onNodeWithTag("theme_palette_grid").assertIsDisplayed()
+        composeRule.onNodeWithTag("theme_palette_rose").assertIsDisplayed()
+    }
+
+    @Test
+    fun canSwitchThemeModeFromThemeSettings() {
+        composeRule.onNodeWithTag("settings_button").performClick()
+        waitForTag("settings_main_screen")
+
+        composeRule.onNodeWithTag("nav_theme").performClick()
+        waitForTag("settings_theme_screen")
+
+        composeRule.onNodeWithTag("theme_mode_dark").performClick()
+        composeRule.onNodeWithTag("theme_mode_dark_selected").assertIsDisplayed()
     }
 
     private fun openRulesScreen() {

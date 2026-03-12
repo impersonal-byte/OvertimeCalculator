@@ -419,7 +419,13 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
 
     private fun loadSeedColor(): SeedColor {
         return sharedPreferences.getString(KEY_SEED_COLOR, SeedColor.CLAY.name)
-            ?.let { stored -> SeedColor.entries.firstOrNull { it.name == stored } }
+            ?.let { stored ->
+                when (stored) {
+                    "GEEK_BLUE" -> SeedColor.SKY_BLUE
+                    "DEEP_PURPLE" -> SeedColor.ORCHID
+                    else -> SeedColor.entries.firstOrNull { it.name == stored }
+                }
+            }
             ?: SeedColor.CLAY
     }
 

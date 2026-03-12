@@ -18,6 +18,7 @@ import com.peter.overtimecalculator.ui.CalendarStartDay
 object SettingsDestinations {
     const val GRAPH_ROUTE = "settings_graph"
     const val MAIN = "settings/main"
+    const val THEME = "settings/theme"
     const val RULES = "settings/rules"
     const val PREFERENCES = "settings/preferences"
     const val DATA = "settings/data"
@@ -55,10 +56,28 @@ fun NavGraphBuilder.settingsGraph(
                 uiState = uiState,
                 updateUiState = updateUiState,
                 onBack = { navController.popBackStack() },
+                onNavigateToTheme = { navController.navigate(SettingsDestinations.THEME) },
                 onNavigateToRules = { navController.navigate(SettingsDestinations.RULES) },
                 onNavigateToPreferences = { navController.navigate(SettingsDestinations.PREFERENCES) },
                 onNavigateToData = { navController.navigate(SettingsDestinations.DATA) },
                 onNavigateToAbout = { navController.navigate(SettingsDestinations.ABOUT) },
+                modifier = Modifier.padding(innerPadding),
+            )
+        }
+
+        composable(
+            route = SettingsDestinations.THEME,
+            enterTransition = { settingsForwardEnter() },
+            exitTransition = { settingsForwardExit() },
+            popEnterTransition = { settingsBackEnter() },
+            popExitTransition = { settingsBackExit() },
+        ) {
+            ThemeSettingsScreen(
+                uiState = uiState,
+                onAppThemeChange = onAppThemeChange,
+                onUseDynamicColorChange = onUseDynamicColorChange,
+                onSeedColorChange = onSeedColorChange,
+                onBack = { navController.popBackStack() },
                 modifier = Modifier.padding(innerPadding),
             )
         }
@@ -91,9 +110,6 @@ fun NavGraphBuilder.settingsGraph(
             PreferencesScreen(
                 uiState = uiState,
                 onCalendarStartDayChange = onCalendarStartDayChange,
-                onAppThemeChange = onAppThemeChange,
-                onUseDynamicColorChange = onUseDynamicColorChange,
-                onSeedColorChange = onSeedColorChange,
                 onBack = { navController.popBackStack() },
                 modifier = Modifier.padding(innerPadding),
             )

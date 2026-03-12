@@ -22,10 +22,14 @@ enum class AppTheme {
 }
 
 enum class SeedColor(val label: String) {
-    CLAY("陶土红"),
-    GEEK_BLUE("极客蓝"),
-    MINT_GREEN("护眼绿"),
-    DEEP_PURPLE("深邃紫"),
+    CLAY("Clay"),
+    MINT_GREEN("Mint"),
+    AQUA("Aqua"),
+    SKY_BLUE("Sky"),
+    LAVENDER("Lavender"),
+    ORCHID("Orchid"),
+    LILAC("Lilac"),
+    ROSE("Rose"),
 }
 
 data class MonthlyConfig(
