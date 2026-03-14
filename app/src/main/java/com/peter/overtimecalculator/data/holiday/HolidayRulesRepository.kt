@@ -10,8 +10,6 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.peter.overtimecalculator.domain.HolidayRemoteMetadata
 import com.peter.overtimecalculator.domain.HolidayRulesSnapshot
 import com.peter.overtimecalculator.domain.HolidayYearRules
-import java.net.HttpURLConnection
-import java.net.URL
 import java.time.LocalDate
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -41,7 +39,7 @@ class HolidayRulesRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val currentYearProvider: () -> Int = { LocalDate.now().year },
     private val remoteUrlTemplate: String = DEFAULT_REMOTE_URL_TEMPLATE,
-    private val remoteReader: (String) -> String = ::readRemoteHolidayJson,
+    private val remoteClient: HolidayRemoteClient = HttpUrlConnectionHolidayRemoteClient(),
 ) {
     private val dataStore = context.holidayRulesDataStore
     private val baselineRules = context.assets.open(BASELINE_ASSET_PATH).bufferedReader().use { reader ->
@@ -141,7 +139,7 @@ class HolidayRulesRepository(
 
     private fun fetchRemoteJson(year: Int): String {
         val remoteUrl = remoteUrlTemplate.format(year)
-        return remoteReader(remoteUrl)
+        return remoteClient.fetch(remoteUrl)
     }
 
     private fun mergeSnapshots(
@@ -169,22 +167,4 @@ class HolidayRulesRepository(
 
 private fun HolidayYearRules.hasMeaningfulOverrides(): Boolean {
     return holidayDates.isNotEmpty() || workingDates.isNotEmpty()
-}
-
-private fun readRemoteHolidayJson(remoteUrl: String): String {
-    val connection = (URL(remoteUrl).openConnection() as HttpURLConnection).apply {
-        requestMethod = "GET"
-        connectTimeout = 10_000
-        readTimeout = 10_000
-        setRequestProperty("Accept", "application/json")
-        setRequestProperty("User-Agent", "JiaxinHolidaySync/1.0")
-    }
-
-    return try {
-        val statusCode = connection.responseCode
-        require(statusCode in 200..299) { "Holiday rules request failed: $statusCode" }
-        connection.inputStream.bufferedReader().use { it.readText() }
-    } finally {
-        connection.disconnect()
-    }
 }

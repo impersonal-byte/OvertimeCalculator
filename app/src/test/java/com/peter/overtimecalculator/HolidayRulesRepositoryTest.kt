@@ -6,6 +6,7 @@ import android.content.ContextWrapper
 import android.content.res.AssetManager
 import androidx.test.core.app.ApplicationProvider
 import com.peter.overtimecalculator.data.holiday.HolidayRefreshResult
+import com.peter.overtimecalculator.data.holiday.HolidayRemoteClient
 import com.peter.overtimecalculator.data.holiday.HolidayRulesRepository
 import java.io.File
 import java.time.LocalDate
@@ -38,7 +39,7 @@ class HolidayRulesRepositoryTest {
             applicationScope = backgroundScope,
             ioDispatcher = dispatcher,
             currentYearProvider = { 2026 },
-            remoteReader = { url ->
+            remoteClient = fakeRemoteClient { url ->
                 requestedUrls += url
                 when (url) {
                     "https://api.haoshenqi.top/holiday?date=2026" ->
@@ -83,7 +84,7 @@ class HolidayRulesRepositoryTest {
             applicationScope = backgroundScope,
             ioDispatcher = dispatcher,
             currentYearProvider = { 2026 },
-            remoteReader = { error("Cached initialization should not hit network") },
+            remoteClient = fakeRemoteClient { error("Cached initialization should not hit network") },
         )
         advanceUntilIdle()
 
@@ -99,7 +100,7 @@ class HolidayRulesRepositoryTest {
             applicationScope = backgroundScope,
             ioDispatcher = dispatcher,
             currentYearProvider = { 2026 },
-            remoteReader = { """[{ "date": "2026-10-02", "status": 0 }]""" },
+            remoteClient = fakeRemoteClient { """[{ "date": "2026-10-02", "status": 0 }]""" },
         )
         advanceUntilIdle()
 
@@ -125,6 +126,12 @@ class HolidayRulesRepositoryTest {
             override fun getCacheDir(): File = File(root, "cache").apply(File::mkdirs)
 
             override fun getNoBackupFilesDir(): File = File(root, "no-backup").apply(File::mkdirs)
+        }
+    }
+
+    private fun fakeRemoteClient(fetcher: (String) -> String): HolidayRemoteClient {
+        return object : HolidayRemoteClient {
+            override fun fetch(remoteUrl: String): String = fetcher(remoteUrl)
         }
     }
 }
