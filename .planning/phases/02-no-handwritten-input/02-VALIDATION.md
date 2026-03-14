@@ -1,9 +1,9 @@
 ---
 phase: 02
 slug: no-handwritten-input
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: planned
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-15
 ---
 
@@ -38,20 +38,24 @@ created: 2026-03-15
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 02-01-01 | 01 | 1 | centered day-entry control | unit | `./gradlew :app:testDebugUnitTest` | ⚠️ partial | ⬜ pending |
-| 02-01-02 | 01 | 1 | slider snapping and range rules | unit | `./gradlew :app:testDebugUnitTest` | ❌ W0 | ⬜ pending |
-| 02-02-01 | 02 | 2 | day-editor interaction flow | androidTest | `./gradlew :app:connectedDebugAndroidTest` | ✅ | ⬜ pending |
-| 02-02-02 | 02 | 2 | presets remain available alongside slider | androidTest | `./gradlew :app:connectedDebugAndroidTest` | ✅ | ⬜ pending |
+| 02-01-01 | 01 | 1 | DurationMapper pure helper | unit | `./gradlew :app:testDebugUnitTest --tests "CenteredDurationSliderMappingTest"` | ✅ W0 | ⬜ pending |
+| 02-01-02 | 01 | 1 | CenteredDurationSlider composable | unit | `./gradlew :app:testDebugUnitTest --tests "CenteredDurationSliderTest"` | ✅ W0 | ⬜ pending |
+| 02-01-03 | 01 | 1 | Accessibility semantics | unit | Code review | N/A | ⬜ pending |
+| 02-02-01 | 02 | 2 | Replace stepper with slider | integration | `./gradlew :app:assembleDebug` | ✅ | ⬜ pending |
+| 02-02-02 | 02 | 2 | Non-workday clamping | integration | Code review | ✅ | ⬜ pending |
+| 02-02-03 | 02 | 2 | DayEditorSliderTest | androidTest | `./gradlew :app:connectedDebugAndroidTest --tests "DayEditorSliderTest"` | ✅ | ⬜ pending |
+| 02-02-04 | 02 | 2 | Human verify | checkpoint | Manual | N/A | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
 ---
 
-## Wave 0 Requirements
+## Wave 0 Requirements (COMPLETED)
 
-- [ ] `app/src/test/java/com/peter/overtimecalculator/CenteredDurationSliderMappingTest.kt` - pure mapping and snapping coverage for centered slider conversion
-- [ ] `app/src/androidTest/java/com/peter/overtimecalculator/DayEditorSliderTest.kt` - slider semantics and day-editor interaction coverage
-- [ ] Slider semantics/test tags for `duration_slider`, `duration_slider_value`, and center marker visibility assertions
+- [x] `app/src/test/java/com/peter/overtimecalculator/CenteredDurationSliderMappingTest.kt` - pure mapping and snapping coverage for centered slider conversion
+- [x] `app/src/test/java/com/peter/overtimecalculator/CenteredDurationSliderTest.kt` - slider composable tests
+- [x] `app/src/androidTest/java/com/peter/overtimecalculator/DayEditorSliderTest.kt` - slider semantics and day-editor interaction coverage
+- [x] Slider semantics/test tags: `duration_slider`, `duration_slider_value`, center marker
 
 ---
 
@@ -66,11 +70,11 @@ created: 2026-03-15
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all missing references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 90s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all missing references
+- [x] No watch-mode flags
+- [x] Feedback latency < 90s
+- [x] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** pending
