@@ -2,9 +2,8 @@ package com.peter.overtimecalculator.ui
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.peter.overtimecalculator.OvertimeApplication
+import com.peter.overtimecalculator.appContainer
 import com.peter.overtimecalculator.domain.DownloadStatus
 import com.peter.overtimecalculator.domain.InstallResult
 import com.peter.overtimecalculator.domain.UpdateCheckResult
@@ -38,7 +37,7 @@ data class AppUpdateUiState(
 }
 
 class AppUpdateViewModel(application: Application) : AndroidViewModel(application) {
-    private val updateManager = (application as OvertimeApplication).appContainer.updateManager
+    private val updateManager = application.appContainer.updateManager
     private val updateState = MutableStateFlow<UpdateUiState>(UpdateUiState.Idle)
     private val awaitingInstallPermission = MutableStateFlow(updateManager.isAwaitingInstallPermission())
     private val message = MutableStateFlow<String?>(null)
@@ -185,17 +184,6 @@ class AppUpdateViewModel(application: Application) : AndroidViewModel(applicatio
             is InstallResult.Failed -> {
                 updateState.value = UpdateUiState.Error(result.message)
                 message.value = result.message
-            }
-        }
-    }
-
-    companion object {
-        fun provideFactory(application: Application): ViewModelProvider.Factory {
-            return object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                    return AppUpdateViewModel(application) as T
-                }
             }
         }
     }

@@ -20,10 +20,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val overtimeViewModel: OvertimeViewModel = viewModel(
-                factory = OvertimeViewModel.provideFactory(application),
+                factory = appViewModelFactory { OvertimeViewModel(application) },
             )
             val appUpdateViewModel: AppUpdateViewModel = viewModel(
-                factory = AppUpdateViewModel.provideFactory(application),
+                factory = appViewModelFactory { AppUpdateViewModel(application) },
             )
             val uiState by overtimeViewModel.uiState.collectAsStateWithLifecycle()
             val isDarkTheme = when (uiState.appTheme) {
