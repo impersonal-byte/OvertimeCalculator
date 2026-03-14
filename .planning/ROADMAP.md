@@ -38,14 +38,14 @@ Phases execute in numeric order: 1 -> 2
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Planning Baseline | 0/1 | Not started | - |
-| 2. No handwritten input | 0/0 | Not started | - |
+| 2. No handwritten input | 0/2 | Not started | - |
 
 ### Phase 2: No handwritten input
 
 **Goal:** Replace the current stepper-led day editor with a centered, non-handwritten, structured signed-duration input that keeps quick presets and preserves the existing signed-minute save flow.
 **Requirements**: [Context-driven - centered slider day entry, presets retained, settings numeric forms unchanged]
 **Depends on:** Phase 1
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 **Success Criteria** (what must be TRUE):
   1. The day editor uses a centered signed-duration input with a visually clear zero point and without dense per-step stop indicators on phone-sized screens.
@@ -53,4 +53,5 @@ Phases execute in numeric order: 1 -> 2
   3. Quick presets and reset/clear affordances remain available alongside the new primary control.
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 2 to break down)
+- [ ] 02-01: Create centered duration slider with TDD (pure mapping helper + composable)
+- [ ] 02-02: Integrate centered slider into day editor sheet
