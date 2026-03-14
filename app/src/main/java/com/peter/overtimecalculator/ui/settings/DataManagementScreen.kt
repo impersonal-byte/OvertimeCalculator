@@ -3,14 +3,11 @@ package com.peter.overtimecalculator.ui.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -42,19 +39,7 @@ fun DataManagementScreen(
         ) {
             item { Spacer(modifier = Modifier.height(4.dp)) }
             item {
-                SettingCard(
-                    title = "导出本月数据",
-                    subtitle = "将当前月的加班与调休明细导出为 CSV 表格，并通过系统分享发送。",
-                ) {
-                    Button(
-                        onClick = onExportDataClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("export_csv_btn"),
-                    ) {
-                        Text("导出本月 CSV 数据")
-                    }
-                }
+                ExportDataSection(onExportDataClick = onExportDataClick)
             }
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
