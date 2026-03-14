@@ -127,3 +127,71 @@ jobs:
           files: app/build/dist/*.apk
           body_path: ${{ steps.release_notes.outputs.body_path }}
           generate_release_notes: ${{ steps.release_notes.outputs.generate_notes }}
+
+  sync-readme:
+    runs-on: ubuntu-latest
+    needs: release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Update README release metadata
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pathlib
+          import re
+
+          root = pathlib.Path('.').resolve()
+          readme_path = root / 'README.md'
+          gradle_path = root / 'app' / 'build.gradle.kts'
+
+          release_tag = '${{ github.ref_name }}'
+          gradle_text = gradle_path.read_text(encoding='utf-8')
+          version_code_match = re.search(r'val\s+appVersionCode\s*=\s*(\d+)', gradle_text)
+          if not version_code_match:
+              raise SystemExit('Could not find appVersionCode in app/build.gradle.kts')
+          version_code = version_code_match.group(1)
+
+          readme_text = readme_path.read_text(encoding='utf-8')
+
+          def replace_block(text: str, marker: str, replacement: str) -> str:
+              pattern = re.compile(
+                  rf'(<!-- BEGIN:{marker} -->)(.*?)(<!-- END:{marker} -->)',
+                  re.DOTALL,
+              )
+              if len(pattern.findall(text)) != 1:
+                  raise SystemExit(f'Expected exactly one marker block for: {marker}')
+              if not pattern.search(text):
+                  raise SystemExit(f'Marker block not found: {marker}')
+              return pattern.sub(rf'\1\n{replacement}\n\3', text, count=1)
+
+          release_link = f'<a href="https://github.com/impersonal-byte/OvertimeCalculator/releases/tag/{release_tag}">查看 {release_tag}</a>'
+          current_version = '\n'.join([
+              f'- 当前正式版本：`{release_tag}`',
+              f'- 当前版本号：`{version_code}`',
+          ])
+
+          updated = replace_block(readme_text, 'current-release-link', release_link)
+          updated = replace_block(updated, 'current-version', current_version)
+
+          if updated != readme_text:
+              readme_path.write_text(updated, encoding='utf-8')
+          PY
+
+      - name: Commit README sync
+        shell: bash
+        run: |
+          if git diff --quiet -- README.md; then
+            echo "README already up to date"
+            exit 0
+          fi
+
+          git add README.md
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "docs: sync README for ${{ github.ref_name }} [skip ci]"
+          git push origin HEAD:main
