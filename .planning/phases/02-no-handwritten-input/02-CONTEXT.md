@@ -34,6 +34,11 @@ Replace handwritten-style or manual freeform day-entry expectations with a struc
 - Keep the sign semantics explicit in the UI: left means negative/comp time, right means positive/overtime.
 - Retain lightweight explanatory copy and save feedback, with snackbar-style messaging reserved for exceptional failures rather than normal range guidance.
 
+### Slider markers
+- Do not render stop indicators for every 30-minute detent on phone-sized screens.
+- Keep 30-minute snapping internally, but show only sparse major markers and a clear center-zero indicator.
+- Prioritize readability of direction and zero position over exhaustive visual ticks.
+
 ### Claude's Discretion
 - Exact centered-slider visual design, labels, and tick-mark treatment.
 - Snapping interval, haptic behavior, and whether presets stay always visible or collapse on small screens.
@@ -46,6 +51,7 @@ Replace handwritten-style or manual freeform day-entry expectations with a struc
 
 - "使用 Centered sliders，向左表示负，向右表示正数。"
 - The user explicitly questioned whether this can completely replace the current interaction; the chosen default is to apply full replacement only to daily duration entry, not to all settings forms.
+- The user explicitly raised crowding concerns about stop indicators on mobile; the chosen default is sparse major ticks only, not one marker per step.
 
 </specifics>
 
