@@ -38,13 +38,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.peter.overtimecalculator.domain.DayType
+import com.peter.overtimecalculator.domain.OvertimeEntryValidator
+import com.peter.overtimecalculator.ui.components.CenteredDurationSlider
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.withTimeoutOrNull
 
 private const val DurationStepMinutes = 30
-private const val MaxOvertimeMinutes = 16 * 60
-private const val MinCompMinutes = -8 * 60
 private val PositiveDurationPresetsMinutes = listOf(30, 60, 90, 120, 180, 240, 360, 480, 600, 720, 840, 960)
 private val NegativeDurationPresetsMinutes = listOf(-30, -60, -120, -240, -480)
 
@@ -63,7 +63,7 @@ internal fun CompTimeDayEditorSheet(
     }
 
     LaunchedEffect(minMinutes) {
-        totalMinutes = totalMinutes.coerceIn(minMinutes, MaxOvertimeMinutes)
+        totalMinutes = totalMinutes.coerceIn(minMinutes, OvertimeEntryValidator.MAX_OVERTIME_MINUTES)
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.testTag("day_editor_sheet")) {
@@ -93,35 +93,22 @@ internal fun CompTimeDayEditorSheet(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text("工时调整", style = MaterialTheme.typography.titleMedium)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        DurationStepperButton(
-                            label = "-",
-                            enabled = totalMinutes > minMinutes,
-                            tag = "decrease_duration",
-                        ) {
-                            totalMinutes = adjustSignedDurationMinutes(totalMinutes, -DurationStepMinutes, minMinutes)
-                        }
-                        Text(
-                            text = formatStepperDuration(totalMinutes),
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .weight(1f)
-                                .testTag("editor_duration_value"),
-                        )
-                        DurationStepperButton(
-                            label = "+",
-                            enabled = totalMinutes < MaxOvertimeMinutes,
-                            tag = "increase_duration",
-                        ) {
-                            totalMinutes = adjustSignedDurationMinutes(totalMinutes, DurationStepMinutes, minMinutes)
-                        }
-                    }
+                    Text(
+                        text = formatStepperDuration(totalMinutes),
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("editor_duration_value"),
+                    )
+                    CenteredDurationSlider(
+                        valueMinutes = totalMinutes,
+                        onValueMinutesChange = { totalMinutes = it },
+                        minMinutes = minMinutes,
+                        maxMinutes = OvertimeEntryValidator.MAX_OVERTIME_MINUTES,
+                        centeredVisual = minMinutes < 0,
+                    )
                     Text(
                         text = when {
                             totalMinutes < 0 -> "当前为调休申请，将优先抵扣本月工作日加班"
@@ -202,9 +189,13 @@ internal fun CompTimeDayEditorSheet(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        OverrideChip("跟随系统", overrideType.isBlank()) { overrideType = "" }
+                        OverrideChip("跟随系统", overrideType.isBlank(), "override_system") { overrideType = "" }
                         DayType.entries.forEach { type ->
-                            OverrideChip(dayTypeLabel(type), overrideType == type.name) { overrideType = type.name }
+                            OverrideChip(
+                                label = dayTypeLabel(type),
+                                selected = overrideType == type.name,
+                                tag = "override_${type.name.lowercase(Locale.US)}",
+                            ) { overrideType = type.name }
                         }
                     }
                     Row(
@@ -230,8 +221,13 @@ internal fun CompTimeDayEditorSheet(
 }
 
 @Composable
-private fun OverrideChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    FilterChip(selected = selected, onClick = onClick, label = { Text(label) })
+private fun OverrideChip(label: String, selected: Boolean, tag: String, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        modifier = Modifier.testTag(tag),
+        label = { Text(label) },
+    )
 }
 
 @Composable
@@ -303,13 +299,13 @@ private fun roundSignedToNearestHalfHour(totalMinutes: Int, minMinutes: Int): In
     } else {
         -(((kotlin.math.abs(totalMinutes) + 15) / DurationStepMinutes) * DurationStepMinutes)
     }
-    return rounded.coerceIn(minMinutes, MaxOvertimeMinutes)
+    return rounded.coerceIn(minMinutes, OvertimeEntryValidator.MAX_OVERTIME_MINUTES)
 }
 
 private fun adjustSignedDurationMinutes(currentMinutes: Int, deltaMinutes: Int, minMinutes: Int): Int {
-    return (currentMinutes + deltaMinutes).coerceIn(minMinutes, MaxOvertimeMinutes)
+    return (currentMinutes + deltaMinutes).coerceIn(minMinutes, OvertimeEntryValidator.MAX_OVERTIME_MINUTES)
 }
 
 private fun minAllowedMinutes(dayType: DayType): Int {
-    return if (dayType == DayType.WORKDAY) MinCompMinutes else 0
+    return if (dayType == DayType.WORKDAY) OvertimeEntryValidator.MIN_COMP_MINUTES else 0
 }
