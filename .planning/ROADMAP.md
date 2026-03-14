@@ -13,6 +13,7 @@ This roadmap starts by establishing a durable GSD planning baseline for an alrea
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Planning Baseline** - Initialize GSD project memory and quick-task support for the existing app
+- [ ] **Phase 2: No handwritten input** - Define a non-handwritten, structured day-entry interaction for overtime and comp time
 
 ## Phase Details
 
@@ -32,8 +33,19 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1
+Phases execute in numeric order: 1 -> 2
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Planning Baseline | 0/1 | Not started | - |
+| 2. No handwritten input | 0/0 | Not started | - |
+
+### Phase 2: No handwritten input
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 1
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 2 to break down)
