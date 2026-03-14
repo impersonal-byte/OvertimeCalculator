@@ -42,10 +42,15 @@ Phases execute in numeric order: 1 -> 2
 
 ### Phase 2: No handwritten input
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Replace the current stepper-led day editor with a centered, non-handwritten, structured signed-duration input that keeps quick presets and preserves the existing signed-minute save flow.
+**Requirements**: [Context-driven - centered slider day entry, presets retained, settings numeric forms unchanged]
 **Depends on:** Phase 1
 **Plans:** 0 plans
+
+**Success Criteria** (what must be TRUE):
+  1. The day editor uses a centered signed-duration input with a visually clear zero point and without dense per-step stop indicators on phone-sized screens.
+  2. Daily entry still saves through the existing signed-minute pipeline, with negative values remaining restricted to valid day types.
+  3. Quick presets and reset/clear affordances remain available alongside the new primary control.
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 2 to break down)
