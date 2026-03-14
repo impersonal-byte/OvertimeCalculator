@@ -1,11 +1,9 @@
 package com.peter.overtimecalculator.ui
 
 import android.app.Application
-import android.content.Context
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.peter.overtimecalculator.OvertimeApplication
+import com.peter.overtimecalculator.appContainer
 import com.peter.overtimecalculator.domain.DayCellUiState
 import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.DomainResult
@@ -32,6 +30,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -40,6 +39,7 @@ data class DayEditorUiState(
     val date: LocalDate,
     val currentMinutes: Int,
     val currentOverride: DayType?,
+    val resolvedDayType: DayType,
 )
 
 private data class AppearancePreferences(
@@ -107,19 +107,15 @@ enum class CalendarStartDay {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OvertimeViewModel(application: Application) : AndroidViewModel(application) {
-    private val appContainer = (application as OvertimeApplication).appContainer
+    private val appContainer = application.appContainer
     private val repository = appContainer.repository
     private val saveOvertimeUseCase = appContainer.saveOvertimeUseCase
     private val updateManualHourlyRateUseCase = appContainer.updateManualHourlyRateUseCase
     private val updateMultipliersUseCase = appContainer.updateMultipliersUseCase
     private val reverseEngineerHourlyRateUseCase = appContainer.reverseEngineerHourlyRateUseCase
+    private val appearancePreferencesRepository = appContainer.appearancePreferencesRepository
     private val selectedMonth = MutableStateFlow(YearMonth.now())
     private val selectedEditorDate = MutableStateFlow<LocalDate?>(null)
-    private val sharedPreferences = application.getSharedPreferences("overtime-preferences", Context.MODE_PRIVATE)
-    private val calendarStartDay = MutableStateFlow(loadCalendarStartDay())
-    private val appTheme = MutableStateFlow(loadAppTheme())
-    private val useDynamicColor = MutableStateFlow(loadUseDynamicColor())
-    private val seedColor = MutableStateFlow(loadSeedColor())
     private val _events = Channel<UiEvent>(Channel.BUFFERED)
 
     val events: Flow<UiEvent> = _events.receiveAsFlow()
@@ -128,19 +124,27 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
         .flatMapLatest(repository::observeMonth)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    private val appearancePreferences = combine(
-        calendarStartDay,
-        appTheme,
-        useDynamicColor,
-        seedColor,
-    ) { currentCalendarStartDay, currentAppTheme, currentUseDynamicColor, currentSeedColor ->
-        AppearancePreferences(
-            calendarStartDay = currentCalendarStartDay,
-            appTheme = currentAppTheme,
-            useDynamicColor = currentUseDynamicColor,
-            seedColor = currentSeedColor,
+    private val appearancePreferences = appearancePreferencesRepository.snapshot
+        .map { snapshot ->
+            buildAppearancePreferences(
+                calendarStartDay = snapshot.calendarStartDay,
+                appTheme = snapshot.appTheme,
+                useDynamicColor = snapshot.useDynamicColor,
+                seedColor = snapshot.seedColor,
+            )
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            appearancePreferencesRepository.snapshot.value.let { snapshot ->
+                buildAppearancePreferences(
+                    calendarStartDay = snapshot.calendarStartDay,
+                    appTheme = snapshot.appTheme,
+                    useDynamicColor = snapshot.useDynamicColor,
+                    seedColor = snapshot.seedColor,
+                )
+            },
         )
-    }
 
     val uiState: StateFlow<AppUiState> = combine(
         selectedMonth,
@@ -148,34 +152,12 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
         selectedEditorDate,
         appearancePreferences,
     ) { month, observed, editorDate, appearance ->
-
-        if (observed == null) {
-            AppUiState.empty().copy(
-                selectedMonth = month,
-                calendarStartDay = appearance.calendarStartDay,
-                appTheme = appearance.appTheme,
-                useDynamicColor = appearance.useDynamicColor,
-                seedColor = appearance.seedColor,
-            )
-        } else {
-            AppUiState(
-                selectedMonth = month,
-                dayCells = observed.dayCells,
-                summary = observed.summary,
-                config = observed.config,
-                calendarStartDay = appearance.calendarStartDay,
-                appTheme = appearance.appTheme,
-                useDynamicColor = appearance.useDynamicColor,
-                seedColor = appearance.seedColor,
-                editor = editorDate?.let { date ->
-                    DayEditorUiState(
-                        date = date,
-                        currentMinutes = observed.entryMinutesByDate[date] ?: 0,
-                        currentOverride = observed.overrideTypesByDate[date],
-                    )
-                },
-            )
-        }
+        buildAppUiState(
+            month = month,
+            observed = observed,
+            editorDate = editorDate,
+            appearance = appearance,
+        )
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000),
@@ -215,25 +197,19 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun updateCalendarStartDay(startDay: CalendarStartDay) {
-        calendarStartDay.value = startDay
-        sharedPreferences.edit()
-            .putString(KEY_CALENDAR_START_DAY, startDay.name)
-            .apply()
+        appearancePreferencesRepository.saveCalendarStartDay(startDay)
     }
 
     fun updateTheme(theme: AppTheme) {
-        appTheme.value = theme
-        sharedPreferences.edit().putString(KEY_APP_THEME, theme.name).apply()
+        appearancePreferencesRepository.saveAppTheme(theme)
     }
 
     fun updateUseDynamicColor(useDynamic: Boolean) {
-        useDynamicColor.value = useDynamic
-        sharedPreferences.edit().putBoolean(KEY_USE_DYNAMIC_COLOR, useDynamic).apply()
+        appearancePreferencesRepository.saveUseDynamicColor(useDynamic)
     }
 
     fun updateSeedColor(seed: SeedColor) {
-        seedColor.value = seed
-        sharedPreferences.edit().putString(KEY_SEED_COLOR, seed.name).apply()
+        appearancePreferencesRepository.saveSeedColor(seed)
     }
 
     fun saveOvertime(date: LocalDate, hoursText: String, minutesText: String, overrideDayType: DayType?) {
@@ -350,6 +326,77 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    private fun buildAppearancePreferences(
+        calendarStartDay: CalendarStartDay,
+        appTheme: AppTheme,
+        useDynamicColor: Boolean,
+        seedColor: SeedColor,
+    ): AppearancePreferences {
+        return AppearancePreferences(
+            calendarStartDay = calendarStartDay,
+            appTheme = appTheme,
+            useDynamicColor = useDynamicColor,
+            seedColor = seedColor,
+        )
+    }
+
+    private fun buildAppUiState(
+        month: YearMonth,
+        observed: ObservedMonth?,
+        editorDate: LocalDate?,
+        appearance: AppearancePreferences,
+    ): AppUiState {
+        return if (observed == null) {
+            buildEmptyUiState(
+                month = month,
+                appearance = appearance,
+            )
+        } else {
+            AppUiState(
+                selectedMonth = month,
+                dayCells = observed.dayCells,
+                summary = observed.summary,
+                config = observed.config,
+                calendarStartDay = appearance.calendarStartDay,
+                appTheme = appearance.appTheme,
+                useDynamicColor = appearance.useDynamicColor,
+                seedColor = appearance.seedColor,
+                editor = buildDayEditorUiState(
+                    editorDate = editorDate,
+                    observed = observed,
+                ),
+            )
+        }
+    }
+
+    private fun buildEmptyUiState(
+        month: YearMonth,
+        appearance: AppearancePreferences,
+    ): AppUiState {
+        return AppUiState.empty().copy(
+            selectedMonth = month,
+            calendarStartDay = appearance.calendarStartDay,
+            appTheme = appearance.appTheme,
+            useDynamicColor = appearance.useDynamicColor,
+            seedColor = appearance.seedColor,
+        )
+    }
+
+    private fun buildDayEditorUiState(
+        editorDate: LocalDate?,
+        observed: ObservedMonth,
+    ): DayEditorUiState? {
+        return editorDate?.let { date ->
+            val resolvedDayType = observed.dayCells.firstOrNull { it.date == date }?.dayType ?: DayType.WORKDAY
+            DayEditorUiState(
+                date = date,
+                currentMinutes = observed.entryMinutesByDate[date] ?: 0,
+                currentOverride = observed.overrideTypesByDate[date],
+                resolvedDayType = resolvedDayType,
+            )
+        }
+    }
+
     private suspend fun handleWriteResult(
         result: DomainResult<Unit>,
         successMessage: String?,
@@ -400,48 +447,4 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
         } else {
             ZeroDecimal
         }
-
-    private fun loadCalendarStartDay(): CalendarStartDay {
-        return sharedPreferences.getString(KEY_CALENDAR_START_DAY, CalendarStartDay.MONDAY.name)
-            ?.let { stored -> CalendarStartDay.entries.firstOrNull { it.name == stored } }
-            ?: CalendarStartDay.MONDAY
-    }
-
-    private fun loadAppTheme(): AppTheme {
-        return sharedPreferences.getString(KEY_APP_THEME, AppTheme.SYSTEM.name)
-            ?.let { stored -> AppTheme.entries.firstOrNull { it.name == stored } }
-            ?: AppTheme.SYSTEM
-    }
-
-    private fun loadUseDynamicColor(): Boolean {
-        return sharedPreferences.getBoolean(KEY_USE_DYNAMIC_COLOR, true)
-    }
-
-    private fun loadSeedColor(): SeedColor {
-        return sharedPreferences.getString(KEY_SEED_COLOR, SeedColor.CLAY.name)
-            ?.let { stored ->
-                when (stored) {
-                    "GEEK_BLUE" -> SeedColor.SKY_BLUE
-                    "DEEP_PURPLE" -> SeedColor.ORCHID
-                    else -> SeedColor.entries.firstOrNull { it.name == stored }
-                }
-            }
-            ?: SeedColor.CLAY
-    }
-
-    companion object {
-        private const val KEY_CALENDAR_START_DAY = "calendar_start_day"
-        private const val KEY_APP_THEME = "app_theme"
-        private const val KEY_USE_DYNAMIC_COLOR = "use_dynamic_color"
-        private const val KEY_SEED_COLOR = "seed_color"
-
-        fun provideFactory(application: Application): ViewModelProvider.Factory {
-            return object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                    return OvertimeViewModel(application) as T
-                }
-            }
-        }
-    }
 }

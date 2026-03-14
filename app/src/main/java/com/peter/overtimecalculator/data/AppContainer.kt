@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.peter.overtimecalculator.data.db.AppDatabase
 import com.peter.overtimecalculator.data.holiday.HolidayRulesRepository
+import com.peter.overtimecalculator.data.holiday.HttpUrlConnectionHolidayRemoteClient
 import com.peter.overtimecalculator.data.holiday.HolidaySyncWorker
 import com.peter.overtimecalculator.data.repository.OvertimeRepository
 import com.peter.overtimecalculator.data.update.AndroidUpdateManager
@@ -31,11 +32,15 @@ class AppContainer(
     val holidayRulesRepository = HolidayRulesRepository(
         context = context,
         applicationScope = applicationScope,
+        remoteClient = HttpUrlConnectionHolidayRemoteClient(),
     )
 
     private val holidayCalendar = HolidayCalendar(holidayRulesRepository::currentRules)
 
     val updateManager: UpdateManager = AndroidUpdateManager(context)
+
+    val appearancePreferencesRepository: AppearancePreferencesRepository =
+        SharedPreferencesAppearancePreferencesRepository.create(context)
 
     val repository = OvertimeRepository(
         database = database,
