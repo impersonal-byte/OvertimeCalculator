@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 @Database(
     entities = [MonthlyConfigEntity::class, OvertimeEntryEntity::class, HolidayOverrideEntity::class],
     version = 2,
-    exportSchema = false,
+    exportSchema = true,
 )
 @TypeConverters(BigDecimalConverters::class)
 abstract class AppDatabase : RoomDatabase() {
