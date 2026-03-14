@@ -2,18 +2,10 @@ package com.peter.overtimecalculator.ui.settings
 
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
-import com.peter.overtimecalculator.domain.AppTheme
-import com.peter.overtimecalculator.domain.SeedColor
-import com.peter.overtimecalculator.ui.AppUiState
-import com.peter.overtimecalculator.ui.AppUpdateUiState
-import com.peter.overtimecalculator.ui.CalendarStartDay
 
 object SettingsDestinations {
     const val GRAPH_ROUTE = "settings_graph"
@@ -27,19 +19,8 @@ object SettingsDestinations {
 
 fun NavGraphBuilder.settingsGraph(
     navController: NavController,
-    uiState: AppUiState,
-    updateUiState: AppUpdateUiState,
-    innerPadding: PaddingValues,
-    onSaveHourlyRate: (String) -> Unit,
-    onSaveMultipliers: (String, String, String) -> Unit,
-    onReverseEngineer: (String) -> Unit,
-    onCheckForUpdates: () -> Unit,
-    onCalendarStartDayChange: (CalendarStartDay) -> Unit,
-    onAppThemeChange: (AppTheme) -> Unit,
-    onUseDynamicColorChange: (Boolean) -> Unit,
-    onSeedColorChange: (SeedColor) -> Unit,
-    onExportDataClick: () -> Unit,
-    onModeSwitch: () -> Unit,
+    state: SettingsGraphState,
+    actions: SettingsGraphActions,
 ) {
     navigation(
         startDestination = SettingsDestinations.MAIN,
@@ -52,16 +33,14 @@ fun NavGraphBuilder.settingsGraph(
             popEnterTransition = { settingsBackEnter() },
             popExitTransition = { settingsBackExit() },
         ) {
-            SettingsMainScreen(
-                uiState = uiState,
-                updateUiState = updateUiState,
+            SettingsMainRoute(
+                state = state,
                 onBack = { navController.popBackStack() },
                 onNavigateToTheme = { navController.navigate(SettingsDestinations.THEME) },
                 onNavigateToRules = { navController.navigate(SettingsDestinations.RULES) },
                 onNavigateToPreferences = { navController.navigate(SettingsDestinations.PREFERENCES) },
                 onNavigateToData = { navController.navigate(SettingsDestinations.DATA) },
                 onNavigateToAbout = { navController.navigate(SettingsDestinations.ABOUT) },
-                modifier = Modifier.padding(innerPadding),
             )
         }
 
@@ -72,13 +51,10 @@ fun NavGraphBuilder.settingsGraph(
             popEnterTransition = { settingsBackEnter() },
             popExitTransition = { settingsBackExit() },
         ) {
-            ThemeSettingsScreen(
-                uiState = uiState,
-                onAppThemeChange = onAppThemeChange,
-                onUseDynamicColorChange = onUseDynamicColorChange,
-                onSeedColorChange = onSeedColorChange,
+            ThemeSettingsRoute(
+                state = state,
+                actions = actions,
                 onBack = { navController.popBackStack() },
-                modifier = Modifier.padding(innerPadding),
             )
         }
 
@@ -89,14 +65,10 @@ fun NavGraphBuilder.settingsGraph(
             popEnterTransition = { settingsBackEnter() },
             popExitTransition = { settingsBackExit() },
         ) {
-            RulesScreen(
-                uiState = uiState,
-                onSaveHourlyRate = onSaveHourlyRate,
-                onSaveMultipliers = onSaveMultipliers,
-                onReverseEngineer = onReverseEngineer,
-                onModeSwitch = onModeSwitch,
+            RulesRoute(
+                state = state,
+                actions = actions,
                 onBack = { navController.popBackStack() },
-                modifier = Modifier.padding(innerPadding),
             )
         }
 
@@ -107,11 +79,10 @@ fun NavGraphBuilder.settingsGraph(
             popEnterTransition = { settingsBackEnter() },
             popExitTransition = { settingsBackExit() },
         ) {
-            PreferencesScreen(
-                uiState = uiState,
-                onCalendarStartDayChange = onCalendarStartDayChange,
+            PreferencesRoute(
+                state = state,
+                actions = actions,
                 onBack = { navController.popBackStack() },
-                modifier = Modifier.padding(innerPadding),
             )
         }
 
@@ -122,10 +93,10 @@ fun NavGraphBuilder.settingsGraph(
             popEnterTransition = { settingsBackEnter() },
             popExitTransition = { settingsBackExit() },
         ) {
-            DataManagementScreen(
-                onExportDataClick = onExportDataClick,
+            DataManagementRoute(
+                state = state,
+                actions = actions,
                 onBack = { navController.popBackStack() },
-                modifier = Modifier.padding(innerPadding),
             )
         }
 
@@ -136,11 +107,10 @@ fun NavGraphBuilder.settingsGraph(
             popEnterTransition = { settingsBackEnter() },
             popExitTransition = { settingsBackExit() },
         ) {
-            AboutScreen(
-                updateUiState = updateUiState,
-                onCheckForUpdates = onCheckForUpdates,
+            AboutRoute(
+                state = state,
+                actions = actions,
                 onBack = { navController.popBackStack() },
-                modifier = Modifier.padding(innerPadding),
             )
         }
     }
