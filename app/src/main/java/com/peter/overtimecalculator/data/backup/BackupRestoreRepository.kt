@@ -27,6 +27,7 @@ import java.time.Instant
 class BackupRestoreRepository(
     private val dao: OvertimeDao,
     private val codec: BackupSnapshotCodec,
+    private val runInTransaction: suspend (suspend () -> Unit) -> Unit = { block -> block() },
 ) {
     
     /**
@@ -117,14 +118,16 @@ class BackupRestoreRepository(
                 )
             }
             
-            // Replace all data - clear old rows first, then insert new ones
-            // This ensures true replace semantics: rows not in snapshot are removed
-            dao.deleteAllConfigs()
-            dao.deleteAllEntries()
-            dao.deleteAllOverrides()
-            dao.upsertConfigs(configEntities)
-            dao.upsertEntries(entryEntities)
-            dao.upsertOverrides(overrideEntities)
+            runInTransaction {
+                // Replace all data - clear old rows first, then insert new ones
+                // This ensures true replace semantics: rows not in snapshot are removed
+                dao.deleteAllConfigs()
+                dao.deleteAllEntries()
+                dao.deleteAllOverrides()
+                dao.upsertConfigs(configEntities)
+                dao.upsertEntries(entryEntities)
+                dao.upsertOverrides(overrideEntities)
+            }
             
             Result.success(Unit)
         } catch (e: Exception) {

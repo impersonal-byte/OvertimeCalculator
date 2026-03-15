@@ -2,6 +2,7 @@ package com.peter.overtimecalculator.data
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.withTransaction
 import com.peter.overtimecalculator.data.db.AppDatabase
 import com.peter.overtimecalculator.data.holiday.HolidayRulesRepository
 import com.peter.overtimecalculator.data.holiday.HttpUrlConnectionHolidayRemoteClient
@@ -65,6 +66,11 @@ class AppContainer(
     val backupRestoreRepository: BackupRestoreRepository = BackupRestoreRepository(
         dao = database.overtimeDao(),
         codec = BackupSnapshotCodec(),
+        runInTransaction = { block ->
+            database.withTransaction {
+                block()
+            }
+        },
     )
 
     fun scheduleHolidaySync() {
