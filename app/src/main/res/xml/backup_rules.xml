@@ -6,9 +6,6 @@
     <!-- Include: User appearance preferences -->
     <include domain="sharedpref" path="overtime-preferences.xml" />
     
-    <!-- Exclude: Update session state (volatile, tied to download manager) -->
-    <exclude domain="sharedpref" path="app-update-prefs.xml" />
-    
-    <!-- Exclude: Holiday cache metadata (refreshed on network, not user-authored) -->
-    <exclude domain="file" path="datastore/" />
+    <!-- Other SharedPreferences/DataStore files stay out of backup by omission: only the
+         exact database and overtime-preferences.xml paths above are included. -->
 </full-backup-content>

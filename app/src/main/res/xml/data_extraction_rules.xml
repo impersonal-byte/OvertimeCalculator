@@ -7,11 +7,8 @@
         <!-- Include: User appearance preferences -->
         <include domain="sharedpref" path="overtime-preferences.xml" />
         
-        <!-- Exclude: Update session state (volatile, tied to download manager) -->
-        <exclude domain="sharedpref" path="app-update-prefs.xml" />
-        
-        <!-- Exclude: Holiday cache metadata (refreshed on network, not user-authored) -->
-        <exclude domain="file" path="datastore/" />
+        <!-- Other SharedPreferences/DataStore files stay out of backup by omission: only the
+             exact database and overtime-preferences.xml paths above are included. -->
     </cloud-backup>
     <device-transfer>
         <!-- Include: Room database (business core data) -->
@@ -20,10 +17,7 @@
         <!-- Include: User appearance preferences -->
         <include domain="sharedpref" path="overtime-preferences.xml" />
         
-        <!-- Exclude: Update session state (volatile, tied to download manager) -->
-        <exclude domain="sharedpref" path="app-update-prefs.xml" />
-        
-        <!-- Exclude: Holiday cache metadata (refreshed on network, not user-authored) -->
-        <exclude domain="file" path="datastore/" />
+        <!-- Other SharedPreferences/DataStore files stay out of backup by omission: only the
+             exact database and overtime-preferences.xml paths above are included. -->
     </device-transfer>
 </data-extraction-rules>
