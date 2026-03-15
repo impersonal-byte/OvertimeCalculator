@@ -1,7 +1,9 @@
 package com.peter.overtimecalculator
 
 import com.peter.overtimecalculator.data.backup.BackupSnapshotCodec
+import com.peter.overtimecalculator.domain.BackupHolidayOverride
 import com.peter.overtimecalculator.domain.BackupMonthlyConfig
+import com.peter.overtimecalculator.domain.BackupOvertimeEntry
 import com.peter.overtimecalculator.domain.BackupSnapshot
 import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.HourlyRateSource
@@ -47,13 +49,13 @@ class BackupSnapshotTest {
                 ),
             ),
             overtimeEntries = listOf(
-                BackupSnapshot.BackupOvertimeEntry(date = "2026-01-15", minutes = 120),
-                BackupSnapshot.BackupOvertimeEntry(date = "2026-01-20", minutes = 180),
-                BackupSnapshot.BackupOvertimeEntry(date = "2026-02-10", minutes = 90),
+                BackupOvertimeEntry(date = "2026-01-15", minutes = 120),
+                BackupOvertimeEntry(date = "2026-01-20", minutes = 180),
+                BackupOvertimeEntry(date = "2026-02-10", minutes = 90),
             ),
             holidayOverrides = listOf(
-                BackupSnapshot.BackupHolidayOverride(date = "2026-01-01", dayType = DayType.HOLIDAY),
-                BackupSnapshot.BackupHolidayOverride(date = "2026-02-14", dayType = DayType.REST_DAY),
+                BackupHolidayOverride(date = "2026-01-01", dayType = DayType.HOLIDAY),
+                BackupHolidayOverride(date = "2026-02-14", dayType = DayType.REST_DAY),
             ),
         )
 
@@ -148,7 +150,7 @@ class BackupSnapshotTest {
                 ),
             ),
             overtimeEntries = listOf(
-                BackupSnapshot.BackupOvertimeEntry(date = "2026-01-15", minutes = 120),
+                BackupOvertimeEntry(date = "2026-01-15", minutes = 120),
             ),
             holidayOverrides = emptyList(),
         )
@@ -177,7 +179,7 @@ class BackupSnapshotTest {
 
         // Should be something like ".obackup" or ".osnap" and "application/overtime-backup"
         assertTrue(
-            BackupSnapshot.BACKUP_FILEExtension.startsWith(".") ||
+            BackupSnapshot.BACKUP_FILE_EXTENSION.startsWith(".") ||
             BackupSnapshot.BACKUP_FILE_EXTENSION.length in 1..10
         )
     }
@@ -200,10 +202,10 @@ class BackupSnapshotTest {
                 ),
             ),
             overtimeEntries = listOf(
-                BackupSnapshot.BackupOvertimeEntry(date = "2026-01-15", minutes = 120),
+                BackupOvertimeEntry(date = "2026-01-15", minutes = 120),
             ),
             holidayOverrides = listOf(
-                BackupSnapshot.BackupHolidayOverride(date = "2026-01-01", dayType = DayType.HOLIDAY),
+                BackupHolidayOverride(date = "2026-01-01", dayType = DayType.HOLIDAY),
             ),
         )
 
