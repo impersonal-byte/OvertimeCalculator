@@ -50,9 +50,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | PLAN-02 | Phase 1 | Pending |
 | PLAN-03 | Phase 1 | Pending |
 | QTK-01 | Phase 1 | Pending |
-| DATA-01 | Phase 3 | Pending |
+| DATA-01 | Phase 3 | Complete |
 | DATA-02 | Phase 3 | Pending |
-| DATA-03 | Phase 3 | Pending |
+| DATA-03 | Phase 3 | Complete |
 | DATA-04 | Phase 3 | Pending |
 
 **Coverage:**
