@@ -81,6 +81,8 @@ internal fun DataManagementRoute(
     onBack: () -> Unit,
 ) {
     DataManagementScreen(
+        onBackupClick = actions.onBackupClick,
+        onRestoreClick = actions.onRestoreClick,
         onExportDataClick = actions.onExportDataClick,
         onBack = onBack,
         modifier = Modifier.padding(state.innerPadding),

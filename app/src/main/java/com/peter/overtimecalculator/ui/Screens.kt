@@ -46,6 +46,8 @@ fun OvertimeCalculatorApp(
         onAppThemeChange = viewModel::updateTheme,
         onUseDynamicColorChange = viewModel::updateUseDynamicColor,
         onSeedColorChange = viewModel::updateSeedColor,
+        onBackupClick = viewModel::createBackup,
+        onRestoreClick = viewModel::pickRestoreFile,
         onExportDataClick = viewModel::exportMonthlyCsv,
         onModeSwitch = tickHaptic::performTick,
         onDismissEditor = viewModel::dismissEditor,

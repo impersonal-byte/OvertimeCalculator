@@ -37,6 +37,8 @@ internal fun OvertimeAppShell(
     onAppThemeChange: (com.peter.overtimecalculator.domain.AppTheme) -> Unit,
     onUseDynamicColorChange: (Boolean) -> Unit,
     onSeedColorChange: (com.peter.overtimecalculator.domain.SeedColor) -> Unit,
+    onBackupClick: () -> Unit,
+    onRestoreClick: () -> Unit,
     onExportDataClick: () -> Unit,
     onModeSwitch: () -> Unit,
     onDismissEditor: () -> Unit,
@@ -67,6 +69,8 @@ internal fun OvertimeAppShell(
             onAppThemeChange = onAppThemeChange,
             onUseDynamicColorChange = onUseDynamicColorChange,
             onSeedColorChange = onSeedColorChange,
+            onBackupClick = onBackupClick,
+            onRestoreClick = onRestoreClick,
             onExportDataClick = onExportDataClick,
             onModeSwitch = onModeSwitch,
         )

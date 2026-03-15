@@ -30,6 +30,8 @@ internal fun OvertimeNavigation(
     onAppThemeChange: (com.peter.overtimecalculator.domain.AppTheme) -> Unit,
     onUseDynamicColorChange: (Boolean) -> Unit,
     onSeedColorChange: (com.peter.overtimecalculator.domain.SeedColor) -> Unit,
+    onBackupClick: () -> Unit,
+    onRestoreClick: () -> Unit,
     onExportDataClick: () -> Unit,
     onModeSwitch: () -> Unit,
 ) {
@@ -47,6 +49,8 @@ internal fun OvertimeNavigation(
         onAppThemeChange = onAppThemeChange,
         onUseDynamicColorChange = onUseDynamicColorChange,
         onSeedColorChange = onSeedColorChange,
+        onBackupClick = onBackupClick,
+        onRestoreClick = onRestoreClick,
         onExportDataClick = onExportDataClick,
         onModeSwitch = onModeSwitch,
     )

@@ -24,6 +24,8 @@ data class SettingsGraphActions(
     val onAppThemeChange: (AppTheme) -> Unit,
     val onUseDynamicColorChange: (Boolean) -> Unit,
     val onSeedColorChange: (SeedColor) -> Unit,
+    val onBackupClick: () -> Unit,
+    val onRestoreClick: () -> Unit,
     val onExportDataClick: () -> Unit,
     val onModeSwitch: () -> Unit,
 )
