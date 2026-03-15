@@ -1,7 +1,7 @@
 import java.util.Properties
 
-val appVersionCode = 13
-val appVersionName = "2.0.0"
+val appVersionCode = 14
+val appVersionName = "2.1.0"
 val localProperties = Properties().apply {
     val localPropertiesFile = rootProject.file("local.properties")
     if (localPropertiesFile.exists()) {
@@ -53,6 +53,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
+
         release {
             isMinifyEnabled = false
             signingConfig = signingConfigs.getByName("release")
