@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.peter.overtimecalculator.appContainer
+import com.peter.overtimecalculator.data.AppContainer
+import com.peter.overtimecalculator.data.backup.BackupSnapshotCodec
 import com.peter.overtimecalculator.domain.DayCellUiState
 import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.DomainResult
@@ -12,6 +14,7 @@ import com.peter.overtimecalculator.domain.INTERNAL_SCALE
 import com.peter.overtimecalculator.domain.MonthlyConfig
 import com.peter.overtimecalculator.domain.MonthlySummaryUiState
 import com.peter.overtimecalculator.domain.ObservedMonth
+import com.peter.overtimecalculator.domain.RestorePreview
 import com.peter.overtimecalculator.domain.ZeroDecimal
 import com.peter.overtimecalculator.domain.AppTheme
 import com.peter.overtimecalculator.domain.SeedColor
@@ -92,12 +95,23 @@ data class AppUiState(
     }
 }
 
+data class RestoreConfirmationUiState(
+    val createdAt: String,
+    val monthCount: Int,
+    val entryCount: Int,
+    val overrideCount: Int,
+)
+
 sealed interface UiEvent {
     data class ShowSnackbar(val message: String) : UiEvent
 
     data class ShareCsvExport(val file: File) : UiEvent
 
     data object TriggerHaptic : UiEvent
+
+    data class CreateBackup(val encodedBackup: String, val fileName: String) : UiEvent
+
+    data object PickRestoreFile : UiEvent
 }
 
 enum class CalendarStartDay {
@@ -106,19 +120,26 @@ enum class CalendarStartDay {
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class OvertimeViewModel(application: Application) : AndroidViewModel(application) {
-    private val appContainer = application.appContainer
+class OvertimeViewModel(
+    application: Application,
+    containerOverride: AppContainer? = null,
+) : AndroidViewModel(application) {
+    private val appContainer = containerOverride ?: application.appContainer
     private val repository = appContainer.repository
     private val saveOvertimeUseCase = appContainer.saveOvertimeUseCase
     private val updateManualHourlyRateUseCase = appContainer.updateManualHourlyRateUseCase
     private val updateMultipliersUseCase = appContainer.updateMultipliersUseCase
     private val reverseEngineerHourlyRateUseCase = appContainer.reverseEngineerHourlyRateUseCase
     private val appearancePreferencesRepository = appContainer.appearancePreferencesRepository
+    private val backupRestoreRepository = appContainer.backupRestoreRepository
     private val selectedMonth = MutableStateFlow(YearMonth.now())
     private val selectedEditorDate = MutableStateFlow<LocalDate?>(null)
     private val _events = Channel<UiEvent>(Channel.BUFFERED)
+    private val _restoreConfirmation = MutableStateFlow<RestoreConfirmationUiState?>(null)
+    private var pendingRestoreBackup: String? = null
 
     val events: Flow<UiEvent> = _events.receiveAsFlow()
+    val restoreConfirmation: StateFlow<RestoreConfirmationUiState?> = _restoreConfirmation
 
     private val observedMonth = selectedMonth
         .flatMapLatest(repository::observeMonth)
@@ -316,6 +337,115 @@ class OvertimeViewModel(application: Application) : AndroidViewModel(application
                 }
                 .onFailure {
                     _events.send(UiEvent.ShowSnackbar("导出 CSV 失败，请稍后重试"))
+                }
+        }
+    }
+
+    /**
+     * Creates a full backup and triggers the save dialog via SAF.
+     */
+    fun createBackup() {
+        viewModelScope.launch {
+            val backupResult = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                runCatching {
+                    val snapshot = backupRestoreRepository.exportSnapshot()
+                    val encoded = BackupSnapshotCodec().encode(snapshot)
+                    val fileName = "overtime_backup_${java.time.LocalDate.now()}${com.peter.overtimecalculator.domain.BackupSnapshot.BACKUP_FILE_EXTENSION}"
+                    Pair(encoded, fileName)
+                }
+            }
+            backupResult
+                .onSuccess { (encoded, fileName) ->
+                    _events.send(UiEvent.CreateBackup(encoded, fileName))
+                }
+                .onFailure {
+                    _events.send(UiEvent.ShowSnackbar("创建备份失败，请稍后重试"))
+                }
+        }
+    }
+
+    /**
+     * Triggers the SAF document picker to select a backup file for restore.
+     */
+    fun pickRestoreFile() {
+        viewModelScope.launch {
+            _events.send(UiEvent.PickRestoreFile)
+        }
+    }
+
+    fun previewRestoreBackup(encodedBackup: String) {
+        viewModelScope.launch {
+            val previewResult = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                runCatching {
+                    val normalized = encodedBackup.removePrefix("\uFEFF")
+                    if (normalized.startsWith("日期,")) {
+                        throw IllegalArgumentException("CSV 文件不是备份文件，请选择 .obackup 格式的备份文件")
+                    }
+                    val snapshot = BackupSnapshotCodec().decode(normalized)
+                    val preview = backupRestoreRepository.previewRestore(snapshot)
+                    if (preview !is RestorePreview.Compatible) {
+                        throw IllegalArgumentException("不支持的备份文件格式，版本: ${preview.schemaVersion}")
+                    }
+                    pendingRestoreBackup = normalized
+                    _restoreConfirmation.value = RestoreConfirmationUiState(
+                        createdAt = preview.createdAt,
+                        monthCount = preview.monthCount,
+                        entryCount = preview.entryCount,
+                        overrideCount = preview.overrideCount,
+                    )
+                }
+            }
+            previewResult.onFailure { error ->
+                pendingRestoreBackup = null
+                _restoreConfirmation.value = null
+                val message = when {
+                    error.message?.contains("CSV", ignoreCase = true) == true ->
+                        "CSV 文件不是备份文件，请选择 .obackup 格式的备份文件"
+                    error.message?.contains("Unsupported backup schema version", ignoreCase = true) == true ->
+                        "备份文件格式不兼容"
+                    error.message?.contains("Missing key", ignoreCase = true) == true ->
+                        "备份文件格式不兼容"
+                    error.message?.contains("不支持", ignoreCase = true) == true ->
+                        error.message ?: "备份文件格式不兼容"
+                    else ->
+                        "读取备份文件失败，请确认文件未损坏"
+                }
+                _events.send(UiEvent.ShowSnackbar(message))
+            }
+        }
+    }
+
+    fun dismissRestoreConfirmation() {
+        pendingRestoreBackup = null
+        _restoreConfirmation.value = null
+    }
+
+    fun confirmRestore() {
+        val encodedBackup = pendingRestoreBackup ?: return
+        viewModelScope.launch {
+            val restoreResult = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                runCatching {
+                    val snapshot = BackupSnapshotCodec().decode(encodedBackup)
+                    backupRestoreRepository.restoreSnapshot(snapshot).getOrThrow()
+                }
+            }
+            restoreResult
+                .onSuccess {
+                    dismissRestoreConfirmation()
+                    _events.send(UiEvent.ShowSnackbar("数据恢复成功"))
+                    _events.send(UiEvent.TriggerHaptic)
+                }
+                .onFailure { error ->
+                    dismissRestoreConfirmation()
+                    val message = when {
+                        error.message?.contains("CSV", ignoreCase = true) == true ->
+                            "CSV 文件不是备份文件，请选择 .obackup 格式的备份文件"
+                        error.message?.contains("不支持", ignoreCase = true) == true ->
+                            error.message ?: "备份文件格式不兼容"
+                        else ->
+                            "恢复数据失败，请稍后重试"
+                    }
+                    _events.send(UiEvent.ShowSnackbar(message))
                 }
         }
     }
