@@ -28,11 +28,11 @@ key-files:
 key-decisions:
   - "Exclude UpdateSessionStore from platform backup (volatile download state)"
   - "Exclude HolidayRulesRepository cache from platform backup (network-refreshed)"
-  - "Manual .obackup scope matches platform backup (Room data only, same as 03-02 contract)"
+  - "Manual .obackup only includes Room business data (not user preferences)"
 
 patterns-established:
-  - "Platform auto-backup: Room DB + user preferences only"
-  - "Manual backup: same as platform (Room data only, excludes holiday cache)"
+  - "Platform auto-backup: Room DB + user preferences"
+  - "Manual backup: Room business data only (current implementation from 03-02)"
   - "Volatile session state excluded from both backup types"
 
 requirements-completed: [DATA-03]
