@@ -1,62 +1,148 @@
-# Structure
+# Codebase Structure
 
-## Repository Layout
-- Root Gradle files: `build.gradle.kts`, `settings.gradle.kts`, `gradle.properties`, and `gradle/wrapper/gradle-wrapper.properties`.
-- Main Android module: `app/`.
-- Human-facing docs: `README.md` and `docs/**`.
-- GitHub automation: `.github/workflows/ci.yml` and `.github/workflows/release.yml`.
+**Analysis Date:** 2026-03-15
 
-## Module Map
-- `settings.gradle.kts` includes only `:app`.
-- There are no separate feature, library, or shared utility Gradle modules.
-- Architectural boundaries are package-based inside the `app` module.
+## Directory Layout
 
-## App Source Sets
-- Production code: `app/src/main/`.
-- JVM unit tests: `app/src/test/`.
-- Instrumentation and Compose UI tests: `app/src/androidTest/`.
+```
+D:\Android.calculator\
+├── app/src/main/java/com/peter/overtimecalculator/
+│   ├── MainActivity.kt           # Single Activity entry point
+│   ├── OvertimeApplication.kt    # Application class
+│   ├── AppDependencies.kt         # ViewModel factory
+│   ├── data/                      # Data layer
+│   ├── domain/                    # Domain layer
+│   └── ui/                        # UI layer
+└── app/src/main/res/              # Android resources
+```
 
-## Main Source Layout
-- Manifest: `app/src/main/AndroidManifest.xml`.
-- Kotlin code root: `app/src/main/java/com/peter/overtimecalculator/`.
-- Bundled assets: `app/src/main/assets/`.
-- XML resources: `app/src/main/res/`.
+## Directory Purposes
 
-## Package Breakdown
-- `app/src/main/java/com/peter/overtimecalculator/data/` holds infrastructure and persistence wiring.
-- `app/src/main/java/com/peter/overtimecalculator/data/db/` holds Room database, DAO, entities, and converters.
-- `app/src/main/java/com/peter/overtimecalculator/data/repository/` holds the main repository boundary.
-- `app/src/main/java/com/peter/overtimecalculator/data/holiday/` holds holiday refresh, parsing, serialization, and worker logic.
-- `app/src/main/java/com/peter/overtimecalculator/data/update/` holds release-check and install flows.
-- `app/src/main/java/com/peter/overtimecalculator/domain/` holds models, calculators, validators, planners, and use cases.
-- `app/src/main/java/com/peter/overtimecalculator/ui/` holds app shell, view models, presentation helpers, and theming hooks.
-- `app/src/main/java/com/peter/overtimecalculator/ui/settings/` holds settings-area screens and routes.
-- `app/src/main/java/com/peter/overtimecalculator/ui/theme/` holds color and theme definitions.
+**Root Package (`com.peter.overtimecalculator`):**
+- Purpose: Entry points and root-level configuration
+- Contains: `MainActivity.kt`, `OvertimeApplication.kt`, `AppDependencies.kt`
+- Key files: `app/src/main/java/com/peter/overtimecalculator/MainActivity.kt`
 
-## Key Entry Files
-- Application bootstrap: `app/src/main/java/com/peter/overtimecalculator/OvertimeApplication.kt`.
-- Activity entry point: `app/src/main/java/com/peter/overtimecalculator/MainActivity.kt`.
-- Main Compose shell: `app/src/main/java/com/peter/overtimecalculator/ui/Screens.kt`.
-- Settings graph: `app/src/main/java/com/peter/overtimecalculator/ui/settings/SettingsGraphs.kt`.
+**Data Layer (`data/`):**
+- Purpose: Persistence, external APIs, data repository implementation
+- Contains: Database, repositories, holiday sync, app updates
+- Key files:
+  - `app/src/main/java/com/peter/overtimecalculator/data/AppContainer.kt` - DI container
+  - `app/src/main/java/com/peter/overtimecalculator/data/repository/OvertimeRepository.kt` - Main repository
 
-## Resource And Asset Layout
-- Strings and theme XML live in `app/src/main/res/values/`.
-- Backup and file-provider XML live in `app/src/main/res/xml/`.
-- Launcher assets live in `app/src/main/res/drawable/` and `app/src/main/res/mipmap-anydpi-v26/`.
-- Holiday baseline data lives in `app/src/main/assets/holidays/cn_mainland.json`.
+**Database Subdirectory (`data/db/`):**
+- Purpose: Room database and entities
+- Contains: Database class, DAOs, entity classes, converters
+- Key files:
+  - `app/src/main/java/com/peter/overtimecalculator/data/db/AppDatabase.kt`
+  - `app/src/main/java/com/peter/overtimecalculator/data/db/Entities.kt`
+  - `app/src/main/java/com/peter/overtimecalculator/data/db/OvertimeDao.kt`
 
-## Tests And Docs
-- Domain, repository, parser, theme, and update tests live in `app/src/test/java/com/peter/overtimecalculator/`.
-- End-to-end UI flow coverage lives in `app/src/androidTest/java/com/peter/overtimecalculator/MainFlowTest.kt`.
-- Feature and release documentation lives in `docs/theme-settings-spec.md` and `docs/releases/*.md`.
+**Holiday Subdirectory (`data/holiday/`):**
+- Purpose: Holiday data management and API sync
+- Contains: Repository, remote client, JSON parser, sync worker
+- Key files:
+  - `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidayRulesRepository.kt`
 
-## Operational Files At Repo Root
-- Local Android SDK and tooling appear under `android-sdk/`.
-- Build output and logs appear under `build/`, `build.log`, `build2.log`, `build_utf8.log`, `manifest_error.log`, `manifest_utf8.log`, and `hs_err_pid*.log`.
-- Signing-related files visible at root include `OvertimeCalculator.jks` and `OvertimeCalculator.jks.base64.txt`.
+**Update Subdirectory (`data/update/`):**
+- Purpose: App update management
+- Contains: Update manager, release checker, download/install gateways
+- Key files:
+  - `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateManager.kt`
 
-## Where New Work Likely Lands
-- New domain rules should usually land under `app/src/main/java/com/peter/overtimecalculator/domain/`.
-- Persistence changes should usually touch `app/src/main/java/com/peter/overtimecalculator/data/db/` and `app/src/main/java/com/peter/overtimecalculator/data/repository/`.
-- New screens or settings subflows should usually land under `app/src/main/java/com/peter/overtimecalculator/ui/` or `app/src/main/java/com/peter/overtimecalculator/ui/settings/`.
-- Release-process updates should usually land in `app/build.gradle.kts`, `README.md`, and `.github/workflows/release.yml`.
+**Domain Layer (`domain/`):**
+- Purpose: Pure business logic, models, and use cases
+- Contains: Models, calculators, use cases, validation
+- Key files:
+  - `app/src/main/java/com/peter/overtimecalculator/domain/Models.kt` - Domain models
+  - `app/src/main/java/com/peter/overtimecalculator/domain/Calculators.kt` - Calculation logic
+  - `app/src/main/java/com/peter/overtimecalculator/domain/WriteUseCases.kt` - Write operations
+
+**UI Layer (`ui/`):**
+- Purpose: All Compose UI and presentation logic
+- Contains: Screens, ViewModels, components, theme, settings
+- Key files:
+  - `app/src/main/java/com/peter/overtimecalculator/ui/OvertimeViewModel.kt` - Main ViewModel
+  - `app/src/main/java/com/peter/overtimecalculator/ui/HomeScreen.kt` - Main screen
+  - `app/src/main/java/com/peter/overtimecalculator/ui/OvertimeNavigation.kt` - Navigation setup
+
+**UI Components (`ui/components/`):**
+- Purpose: Reusable Compose UI components
+- Contains: `CenteredDurationSlider.kt`, `DurationSliderMapping.kt`
+
+**UI Theme (`ui/theme/`):**
+- Purpose: Compose theme configuration
+- Contains: `Theme.kt`, `Color.kt`, `ThemePaletteSpec.kt`
+
+**UI Settings (`ui/settings/`):**
+- Purpose: Settings screens and related UI
+- Contains: Settings screens, sections, ViewModels, navigation
+- Key files:
+  - `app/src/main/java/com/peter/overtimecalculator/ui/settings/SettingsGraphs.kt` - Settings navigation
+  - `app/src/main/java/com/peter/overtimecalculator/ui/settings/SettingsMainScreen.kt`
+
+## Key File Locations
+
+**Entry Points:**
+- `app/src/main/java/com/peter/overtimecalculator/MainActivity.kt`: Single Activity, Compose setup
+- `app/src/main/java/com/peter/overtimecalculator/OvertimeApplication.kt`: App initialization
+
+**Configuration:**
+- `app/src/main/java/com/peter/overtimecalculator/data/AppContainer.kt`: Dependency injection container
+
+**Core Logic:**
+- `app/src/main/java/com/peter/overtimecalculator/ui/OvertimeViewModel.kt`: Main ViewModel (450 lines)
+- `app/src/main/java/com/peter/overtimecalculator/data/repository/OvertimeRepository.kt`: Data access (194 lines)
+- `app/src/main/java/com/peter/overtimecalculator/domain/Calculators.kt`: Business calculations (184 lines)
+
+**Testing:**
+- `app/src/test/java/com/peter/overtimecalculator/`: Unit tests
+- `app/src/androidTest/java/com/peter/overtimecalculator/`: Android instrumentation tests
+
+## Naming Conventions
+
+**Files:**
+- Screens: `*Screen.kt` (e.g., `HomeScreen.kt`, `SettingsMainScreen.kt`)
+- ViewModels: `*ViewModel.kt` (e.g., `OvertimeViewModel.kt`, `AppUpdateViewModel.kt`)
+- Sections: `*Sections.kt` (e.g., `HomeCalendarSections.kt`, `SettingsMainSections.kt`)
+- Contracts: `*Contract.kt` (e.g., `SettingsGraphContract.kt`)
+- Room entity classes are grouped in `app/src/main/java/com/peter/overtimecalculator/data/db/Entities.kt` rather than split into one `*Entity.kt` file per type
+
+**Directories:**
+- Singular names for feature directories: `data/`, `domain/`, `ui/`
+- Plural for collections: `components/`, `settings/`
+
+## Where to Add New Code
+
+**New Feature (UI):**
+- Implementation: `app/src/main/java/com/peter/overtimecalculator/ui/`
+- Tests: `app/src/test/java/com/peter/overtimecalculator/` (unit) or `app/src/androidTest/java/com/peter/overtimecalculator/` (instrumented)
+
+**New Data Source:**
+- Implementation: `app/src/main/java/com/peter/overtimecalculator/data/`
+- Repository: `app/src/main/java/com/peter/overtimecalculator/data/repository/`
+
+**New Business Logic:**
+- Implementation: `app/src/main/java/com/peter/overtimecalculator/domain/`
+- Use Case: Create in `WriteUseCases.kt` or new file
+
+**New Settings Screen:**
+- Implementation: `app/src/main/java/com/peter/overtimecalculator/ui/settings/`
+- Navigation: Add route in `SettingsGraphs.kt` and `SettingsRouteEntries.kt`
+
+## Special Directories
+
+**Assets:**
+- Location: `app/src/main/assets/`
+- Contains: `holidays/cn_mainland.json` - baseline holiday rules
+- Generated: No (committed)
+- Purpose: Pre-bundled holiday data
+
+**Room Schema:**
+- Location: `app/schemas/com.peter.overtimecalculator.data.db.AppDatabase/`
+- Generated: Yes (by Room)
+- Purpose: Database migration support
+
+---
+
+*Structure analysis: 2026-03-15*
