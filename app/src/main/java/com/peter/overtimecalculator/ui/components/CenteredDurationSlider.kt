@@ -2,17 +2,20 @@ package com.peter.overtimecalculator.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -39,7 +42,7 @@ internal fun CenteredDurationSlider(
         maxMinutes = maxMinutes,
         centeredVisual = isCentered,
     )
-    val majorTicks = buildMajorTickMinutes(minMinutes, maxMinutes)
+    val majorTicks = buildMajorTickAnchors(minMinutes, maxMinutes, centeredVisual = isCentered)
 
     Column(modifier = modifier.fillMaxWidth()) {
         Slider(
@@ -92,21 +95,57 @@ internal fun CenteredDurationSlider(
                 )
             }
         }
-        Row(
+        TickLabelRow(
+            ticks = majorTicks,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 4.dp)
                 .testTag("major_ticks"),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            majorTicks.forEach { tickMinutes ->
-                Text(
-                    text = DurationMapper.formatDuration(tickMinutes),
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.testTag("tick_$tickMinutes"),
-                    textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun TickLabelRow(
+    ticks: List<MajorTickAnchor>,
+    modifier: Modifier = Modifier,
+) {
+    BoxWithConstraints(modifier = modifier) {
+        val maxWidthDp = maxWidth
+        Layout(
+            content = {
+                ticks.forEach { tick ->
+                    Text(
+                        text = DurationMapper.formatDuration(tick.minutes),
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier
+                            .testTag("tick_${tick.minutes}")
+                            .widthIn(min = 24.dp),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            },
+        ) { measurables, constraints ->
+            val placeables = measurables.map { measurable ->
+                measurable.measure(
+                    Constraints(
+                        minWidth = 0,
+                        maxWidth = constraints.maxWidth,
+                        minHeight = 0,
+                        maxHeight = constraints.maxHeight,
+                    ),
                 )
+            }
+            val height = placeables.maxOfOrNull { it.height } ?: 0
+            val width = constraints.maxWidth
+
+            layout(width, height) {
+                placeables.forEachIndexed { index, placeable ->
+                    val anchor = ticks[index]
+                    val centeredX = (width * anchor.fraction).toInt() - placeable.width / 2
+                    val x = centeredX.coerceIn(0, (width - placeable.width).coerceAtLeast(0))
+                    placeable.placeRelative(x, 0)
+                }
             }
         }
     }

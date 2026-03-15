@@ -60,9 +60,33 @@ internal object VisualCenterMapper {
     }
 }
 
+internal data class MajorTickAnchor(
+    val minutes: Int,
+    val fraction: Float,
+)
+
 internal fun buildMajorTickMinutes(minMinutes: Int, maxMinutes: Int): List<Int> {
-    val start = if (minMinutes < 0) minMinutes else 0
-    return generateSequence(start) { it + 240 }
-        .takeWhile { it <= maxMinutes }
-        .toList()
+    return if (minMinutes < 0) {
+        listOf(minMinutes, -240, 0, 240, 600, maxMinutes)
+    } else {
+        listOf(0, 240, 600, maxMinutes)
+    }
+}
+
+internal fun buildMajorTickAnchors(
+    minMinutes: Int,
+    maxMinutes: Int,
+    centeredVisual: Boolean,
+): List<MajorTickAnchor> {
+    return buildMajorTickMinutes(minMinutes, maxMinutes).map { minutes ->
+        MajorTickAnchor(
+            minutes = minutes,
+            fraction = VisualCenterMapper.minutesToSliderFraction(
+                minutes = minutes,
+                minMinutes = minMinutes,
+                maxMinutes = maxMinutes,
+                centeredVisual = centeredVisual,
+            ),
+        )
+    }
 }
