@@ -1,5 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
-    <cloud-backup />
-    <device-transfer />
+    <cloud-backup>
+        <!-- Include: Room database (business core data) -->
+        <include domain="database" path="overtime-calculator.db" />
+        
+        <!-- Include: User appearance preferences -->
+        <include domain="sharedpref" path="overtime-preferences.xml" />
+        
+        <!-- Exclude: Update session state (volatile, tied to download manager) -->
+        <exclude domain="sharedpref" path="app-update-prefs.xml" />
+        
+        <!-- Exclude: Holiday cache metadata (refreshed on network, not user-authored) -->
+        <exclude domain="file" path="datastore/holiday-rules.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <!-- Include: Room database (business core data) -->
+        <include domain="database" path="overtime-calculator.db" />
+        
+        <!-- Include: User appearance preferences -->
+        <include domain="sharedpref" path="overtime-preferences.xml" />
+        
+        <!-- Exclude: Update session state (volatile, tied to download manager) -->
+        <exclude domain="sharedpref" path="app-update-prefs.xml" />
+        
+        <!-- Exclude: Holiday cache metadata (refreshed on network, not user-authored) -->
+        <exclude domain="file" path="datastore/holiday-rules.xml" />
+    </device-transfer>
 </data-extraction-rules>
