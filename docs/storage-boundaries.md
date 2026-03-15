@@ -177,11 +177,49 @@ DataStore 当前只用于节假日规则远程缓存。
 - 不要把导出文件或下载文件当作业务真相来源
 - 不要让同一类数据同时在 Room 和键值存储中各存一份而没有主从关系
 
-## 备份与迁移注意事项
+## 备份与恢复注意事项
 
 - `app/src/main/AndroidManifest.xml` 当前启用了 `allowBackup`、`fullBackupContent` 和 `dataExtractionRules`
-- `app/src/main/res/xml/backup_rules.xml` 当前没有做细粒度排除
-- `app/src/main/res/xml/data_extraction_rules.xml` 当前允许 cloud backup 和 device transfer
+- `app/src/main/res/xml/backup_rules.xml` 当前已配置细粒度排除规则
+- `app/src/main/res/xml/data_extraction_rules.xml` 当前为 cloud-backup 和 device-transfer 配置了明确规则
+
+### 平台自动备份范围（Android Auto-Backup / Device Transfer）
+
+以下数据会通过 Android 平台机制自动备份或迁移：
+
+| 存储类型 | 文件/路径 | 备份范围 | 说明 |
+|---------|----------|---------|------|
+| Room | `overtime-calculator.db` | **包含** | 业务主数据：月份配置、加班记录、日期类型覆盖 |
+| SharedPreferences | `overtime-preferences.xml` | **包含** | 用户外观偏好：主题、颜色、起始日期 |
+
+以下数据**主动排除**于平台备份范围：
+
+| 存储类型 | 文件/路径 | 排除原因 |
+|---------|----------|---------|
+| SharedPreferences | `app-update-prefs.xml` | 更新流程状态（download_id, remote_version, awaiting_permission），与下载管理器强绑定，恢复后状态会失效 |
+| DataStore | `holiday-rules.xml` | 节假日缓存元数据（remote_json, fetched_at_epoch_millis），每次启动会自动从网络刷新 |
+
+### 手动备份范围（.obackup 文件）
+
+手动备份（`.obackup` 文件）包含的数据范围应**大于等于**平台备份，以确保手动恢复是平台迁移的超集：
+
+- **包含：** Room 数据库 + 用户偏好（与平台备份一致）
+- **额外包含：** 节假日缓存（`holiday-rules.xml`）— 减少恢复后的网络请求
+
+### 排除数据的恢复预期
+
+| 数据类型 | 恢复后行为 |
+|---------|-----------|
+| UpdateSessionStore (`app-update-prefs.xml`) | 不恢复 — 用户需要重新下载并安装更新 |
+| HolidayRulesRepository (`holiday-rules.xml`) | 自动重新从网络拉取 — 与全新安装行为一致 |
+
+### 关键设计决策
+
+1. **排除更新会话状态** (`UpdateSessionStore`): 该状态记录的是「用户是否在等待某个 APK 下载完成」，恢复后该 download_id 指向的下载任务已失效，必须清除。
+
+2. **排除节假日缓存** (`HolidayRulesRepository`): 该数据从网络动态获取，且有 24 小时过期机制。恢复时重新拉取能确保使用最新节假日数据。
+
+3. **用户偏好保留** (`overtime-preferences.xml`): 外观主题、种子颜色等属于用户个人设置，应该随设备迁移。
 
 这意味着 Room、DataStore 和 `SharedPreferences` 中的内容，默认都可能进入备份或设备迁移范围。后续如果调整存储位置，不能只考虑“本地读写是否正确”，还要同时考虑：
 
