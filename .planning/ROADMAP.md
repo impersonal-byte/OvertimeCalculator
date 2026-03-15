@@ -63,7 +63,7 @@ Plans:
 **Goal:** Add an app-controlled backup and restore workflow that can round-trip the full overtime business state across devices or reinstalls without relying on lossy CSV exports or opaque OS-level migration.
 **Requirements**: [DATA-01, DATA-02, DATA-03, DATA-04]
 **Depends on:** Phase 2
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans executed
 
 **Success Criteria** (what must be TRUE):
   1. Users can create a backup from the data-management area that captures the full business state required to reconstruct overtime months, not just a derived CSV view.
@@ -75,4 +75,4 @@ Plans:
 - [x] 03-01: Define versioned backup snapshot contract and codec with TDD
 - [x] 03-02: Implement persistence-layer backup and restore engine
 - [x] 03-03: Align Android auto-backup scope with manual restore rules
-- [ ] 03-04: Ship data-management backup/restore UI and flow tests
+- [x] 03-04: Ship data-management backup/restore UI and flow tests
