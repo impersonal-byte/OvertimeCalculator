@@ -117,7 +117,11 @@ class BackupRestoreRepository(
                 )
             }
             
-            // Replace all data - clear and insert
+            // Replace all data - clear old rows first, then insert new ones
+            // This ensures true replace semantics: rows not in snapshot are removed
+            dao.deleteAllConfigs()
+            dao.deleteAllEntries()
+            dao.deleteAllOverrides()
             dao.upsertConfigs(configEntities)
             dao.upsertEntries(entryEntities)
             dao.upsertOverrides(overrideEntities)

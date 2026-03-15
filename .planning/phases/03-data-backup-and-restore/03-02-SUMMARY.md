@@ -32,6 +32,7 @@ key-files:
     - app/src/main/java/com/peter/overtimecalculator/data/AppContainer.kt
 
 key-decisions:
+  - "Restore is true clear-and-replace: deletes all old rows before inserting snapshot"
   - "Restore preserves exact durable rows - no replay of write use cases"
   - "PreviewRestore is non-destructive - validates before any write"
   - "Backup excludes update-session and holiday-cache metadata per contract"
@@ -87,7 +88,20 @@ Each task was committed atomically:
 
 ## Deviations from Plan
 
-None - plan executed exactly as written.
+### Auto-fixed Issues
+
+**1. [Rule 1 - Bug] Fixed restore not performing true clear-and-replace**
+- **Found during:** Orchestrator verification after plan completion
+- **Issue:** Initial implementation used upsert (INSERT REPLACE) which only replaces matching primary keys, but doesn't clear old rows not in the snapshot. This is NOT true replace semantics.
+- **Fix:** Added `deleteAllConfigs()`, `deleteAllEntries()`, `deleteAllOverrides()` to DAO. Updated repository to call delete-all before insert to ensure true clear-and-replace behavior.
+- **Files modified:** `app/src/main/java/com/peter/overtimecalculator/data/db/OvertimeDao.kt`, `app/src/main/java/com/peter/overtimecalculator/data/backup/BackupRestoreRepository.kt`
+- **Verification:** Added test `restoreSnapshot_clearsOldDataNotInSnapshot_trueReplaceBehavior` that proves old data is cleared when restoring a subset snapshot
+- **Committed in:** `f4a2b1c` (fix commit)
+
+---
+
+**Total deviations:** 1 auto-fixed (1 bug fix)
+**Impact on plan:** Fix ensures restore has true clear-and-replace semantics as specified in plan. Tests now verify this behavior.
 
 ## Issues Encountered
 None

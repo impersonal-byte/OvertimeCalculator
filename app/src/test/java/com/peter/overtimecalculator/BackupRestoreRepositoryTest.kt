@@ -33,27 +33,33 @@ class BackupRestoreRepositoryTest {
 
     private val codec = BackupSnapshotCodec()
     
-    // Mock DAO for testing - in real tests would use in-memory Room
+    // Mock DAO for testing - simulates PRODUCTION behavior (upsert, not clear)
+    // This exposes the bug where upsert doesn't clear old rows not in snapshot
     private val mockDao = object : OvertimeDao {
-        private val configs = mutableListOf<MonthlyConfigEntity>()
-        private val entries = mutableListOf<OvertimeEntryEntity>()
-        private val overrides = mutableListOf<HolidayOverrideEntity>()
+        // Use LinkedHashMap to preserve insertion order for deterministic tests
+        private val configs = LinkedHashMap<String, MonthlyConfigEntity>()
+        private val entries = LinkedHashMap<String, OvertimeEntryEntity>()
+        private val overrides = LinkedHashMap<String, HolidayOverrideEntity>()
 
-        override suspend fun getAllConfigs(): List<MonthlyConfigEntity> = configs.toList()
-        override suspend fun getAllEntries(): List<OvertimeEntryEntity> = entries.toList()
-        override suspend fun getAllOverrides(): List<HolidayOverrideEntity> = overrides.toList()
+        override suspend fun getAllConfigs(): List<MonthlyConfigEntity> = configs.values.toList()
+        override suspend fun getAllEntries(): List<OvertimeEntryEntity> = entries.values.toList()
+        override suspend fun getAllOverrides(): List<HolidayOverrideEntity> = overrides.values.toList()
+        
+        // PRODUCTION behavior: upsert only replaces matching PKs, does NOT clear
         override suspend fun upsertConfigs(entities: List<MonthlyConfigEntity>) {
-            configs.clear()
-            configs.addAll(entities)
+            entities.forEach { configs[it.yearMonth] = it }
         }
         override suspend fun upsertEntries(entities: List<OvertimeEntryEntity>) {
-            entries.clear()
-            entries.addAll(entities)
+            entities.forEach { entries[it.date] = it }
         }
         override suspend fun upsertOverrides(entities: List<HolidayOverrideEntity>) {
-            overrides.clear()
-            overrides.addAll(entities)
+            entities.forEach { overrides[it.date] = it }
         }
+        
+        // Delete all methods for clear-and-replace
+        override suspend fun deleteAllConfigs() { configs.clear() }
+        override suspend fun deleteAllEntries() { entries.clear() }
+        override suspend fun deleteAllOverrides() { overrides.clear() }
         
         // Unused for these tests
         override suspend fun getEntriesInRange(startDate: String, endDate: String): List<OvertimeEntryEntity> = emptyList()
@@ -250,5 +256,83 @@ class BackupRestoreRepositoryTest {
         val incompatible = preview as RestorePreview.Incompatible
         assertFalse(incompatible.isCompatible)
         assertEquals(999, incompatible.schemaVersion)
+    }
+
+    @Test
+    fun restoreSnapshot_clearsOldDataNotInSnapshot_trueReplaceBehavior() {
+        // Given: DAO has existing data (Jan + Feb configs)
+        runBlocking {
+            mockDao.upsertConfigs(listOf(
+                MonthlyConfigEntity(
+                    yearMonth = "2026-01",
+                    hourlyRate = BigDecimal("60.00"),
+                    rateSource = HourlyRateSource.MANUAL,
+                    weekdayRate = BigDecimal("1.50"),
+                    restDayRate = BigDecimal("2.00"),
+                    holidayRate = BigDecimal("3.00"),
+                    lockedByUser = false,
+                ),
+                MonthlyConfigEntity(
+                    yearMonth = "2026-02",
+                    hourlyRate = BigDecimal("65.00"),
+                    rateSource = HourlyRateSource.MANUAL,
+                    weekdayRate = BigDecimal("1.50"),
+                    restDayRate = BigDecimal("2.00"),
+                    holidayRate = BigDecimal("3.00"),
+                    lockedByUser = false,
+                )
+            ))
+            mockDao.upsertEntries(listOf(
+                OvertimeEntryEntity(date = "2026-01-15", minutes = 120),
+                OvertimeEntryEntity(date = "2026-02-10", minutes = 90)
+            ))
+            mockDao.upsertOverrides(listOf(
+                HolidayOverrideEntity(date = "2026-01-01", dayType = DayType.HOLIDAY)
+            ))
+        }
+        
+        // Verify initial state
+        var initialConfigs = runBlocking { mockDao.getAllConfigs() }
+        assertEquals("Should have 2 configs initially", 2, initialConfigs.size)
+        
+        // When: Restore a snapshot with ONLY March data (subset)
+        val marchOnlySnapshot = BackupSnapshot(
+            schemaVersion = 1,
+            createdAt = Instant.now().toString(),
+            monthlyConfigs = listOf(
+                BackupMonthlyConfig(
+                    yearMonth = YearMonth.of(2026, 3),
+                    hourlyRate = BigDecimal("70.00"),
+                    rateSource = HourlyRateSource.MANUAL,
+                    weekdayRate = BigDecimal("1.50"),
+                    restDayRate = BigDecimal("2.00"),
+                    holidayRate = BigDecimal("3.00"),
+                    lockedByUser = false,
+                )
+            ),
+            overtimeEntries = listOf(
+                BackupOvertimeEntry(date = "2026-03-20", minutes = 180)
+            ),
+            holidayOverrides = emptyList(),
+        )
+        val repository = BackupRestoreRepository(mockDao, codec)
+        
+        val result = runBlocking { repository.restoreSnapshot(marchOnlySnapshot) }
+        
+        // Then: True replace - old Jan/Feb data is GONE, only March remains
+        assertTrue(result.isSuccess)
+        
+        val finalConfigs = runBlocking { mockDao.getAllConfigs() }
+        val finalEntries = runBlocking { mockDao.getAllEntries() }
+        val finalOverrides = runBlocking { mockDao.getAllOverrides() }
+        
+        // Must have ONLY March data - Jan/Feb should be cleared
+        assertEquals("Should have exactly 1 config (March only)", 1, finalConfigs.size)
+        assertEquals("2026-03", finalConfigs[0].yearMonth)
+        
+        assertEquals("Should have exactly 1 entry (March only)", 1, finalEntries.size)
+        assertEquals("2026-03-20", finalEntries[0].date)
+        
+        assertEquals("Should have no overrides", 0, finalOverrides.size)
     }
 }

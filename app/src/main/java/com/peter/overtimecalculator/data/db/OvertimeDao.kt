@@ -55,5 +55,14 @@ interface OvertimeDao {
 
     @Query("DELETE FROM holiday_override WHERE date = :date")
     suspend fun deleteHolidayOverride(date: String)
+
+    @Query("DELETE FROM monthly_config")
+    suspend fun deleteAllConfigs()
+
+    @Query("DELETE FROM overtime_entry")
+    suspend fun deleteAllEntries()
+
+    @Query("DELETE FROM holiday_override")
+    suspend fun deleteAllOverrides()
 }
 
