@@ -13,7 +13,7 @@ This roadmap starts by establishing a durable GSD planning baseline for an alrea
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Planning Baseline** - Initialize GSD project memory and quick-task support for the existing app
-- [ ] **Phase 2: No handwritten input** - Define a non-handwritten, structured day-entry interaction for overtime and comp time
+- [x] **Phase 2: No handwritten input** - Define a non-handwritten, structured day-entry interaction for overtime and comp time
 
 ## Phase Details
 
@@ -38,20 +38,20 @@ Phases execute in numeric order: 1 -> 2
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Planning Baseline | 0/1 | Not started | - |
-| 2. No handwritten input | 0/2 | Not started | - |
+| 2. No handwritten input | 2/2 | Complete | 2026-03-15 |
 
 ### Phase 2: No handwritten input
 
-**Goal:** Replace the current stepper-led day editor with a centered, non-handwritten, structured signed-duration input that keeps quick presets and preserves the existing signed-minute save flow.
-**Requirements**: [Context-driven - centered slider day entry, presets retained, settings numeric forms unchanged]
+**Goal:** Replace the current stepper-led day editor with a centered, non-handwritten, structured signed-duration input that uses slider-only entry and preserves the existing signed-minute save flow.
+**Requirements**: [Context-driven - centered slider day entry, chips removed, settings numeric forms unchanged]
 **Depends on:** Phase 1
 **Plans:** 2 plans
 
 **Success Criteria** (what must be TRUE):
-  1. The day editor uses a centered signed-duration input with a visually clear zero point and without dense per-step stop indicators on phone-sized screens.
+  1. The day editor uses a centered signed-duration input with a visually clear zero point and sparse major tick markers that remain readable on phone-sized screens.
   2. Daily entry still saves through the existing signed-minute pipeline, with negative values remaining restricted to valid day types.
-  3. Quick presets and reset/clear affordances remain available alongside the new primary control.
+  3. The centered slider is the sole duration control, while reset/clear remains available and settings numeric forms stay unchanged.
 
 Plans:
-- [ ] 02-01: Create centered duration slider with TDD (pure mapping helper + composable)
-- [ ] 02-02: Integrate centered slider into day editor sheet
+- [x] 02-01: Create centered duration slider with TDD (pure mapping helper + composable)
+- [x] 02-02: Integrate centered slider into day editor sheet
