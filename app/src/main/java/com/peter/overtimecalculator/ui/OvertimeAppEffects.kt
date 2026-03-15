@@ -1,6 +1,7 @@
 package com.peter.overtimecalculator.ui
 
 import android.content.Intent
+import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.AlertDialog
@@ -22,7 +23,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peter.overtimecalculator.domain.BackupSnapshot
+import java.time.YearMonth
 import kotlinx.coroutines.launch
+
+private const val SAF_BACKUP_CREATE_MIME_TYPE = "application/octet-stream"
 
 @Composable
 internal fun OvertimeAppEffects(
@@ -31,6 +35,7 @@ internal fun OvertimeAppEffects(
     updateMessage: String?,
     snackbarHostState: SnackbarHostState,
     tickHaptic: TickHapticFeedback,
+    onNavigateHomeAfterRestore: (YearMonth) -> Unit,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -38,7 +43,7 @@ internal fun OvertimeAppEffects(
     var pendingBackupContent by remember { mutableStateOf<String?>(null) }
 
     val createBackupLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument(BackupSnapshot.BACKUP_MIME_TYPE),
+        contract = ActivityResultContracts.CreateDocument(SAF_BACKUP_CREATE_MIME_TYPE),
     ) { uri ->
         val encodedBackup = pendingBackupContent
         pendingBackupContent = null
@@ -49,6 +54,7 @@ internal fun OvertimeAppEffects(
         runCatching {
             context.contentResolver.openOutputStream(uri)?.use { output ->
                 output.write(encodedBackup.toByteArray(Charsets.UTF_8))
+                output.flush()
             } ?: error("无法创建备份文件")
         }.onSuccess {
             coroutineScope.launch {
@@ -69,10 +75,38 @@ internal fun OvertimeAppEffects(
         }
 
         runCatching {
-            context.contentResolver.openInputStream(uri)?.use { input ->
-                input.bufferedReader().readText()
+            val displayName = context.contentResolver.query(
+                uri,
+                arrayOf(OpenableColumns.DISPLAY_NAME),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    cursor.getString(0)
+                } else {
+                    null
+                }
+            }
+            val content = context.contentResolver.openInputStream(uri)?.use { input ->
+                input.readBytes().toString(Charsets.UTF_8)
             } ?: error("无法读取备份文件")
-        }.onSuccess(viewModel::previewRestoreBackup)
+            Triple(displayName, content, uri)
+        }.onSuccess { (displayName, content, _) ->
+            if (content.isBlank()) {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("备份文件为空，请重新导出备份后再试")
+                }
+                return@onSuccess
+            }
+
+            if (displayName != null && !displayName.endsWith(BackupSnapshot.BACKUP_FILE_EXTENSION, ignoreCase = true)) {
+                viewModel.previewRestoreBackup(content)
+                return@onSuccess
+            }
+
+            viewModel.previewRestoreBackup(content)
+        }
             .onFailure {
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar("读取备份文件失败，请稍后重试")
@@ -94,8 +128,9 @@ internal fun OvertimeAppEffects(
             createBackupLauncher.launch(fileName)
         },
         onPickRestoreFile = {
-            openBackupLauncher.launch(arrayOf(BackupSnapshot.BACKUP_MIME_TYPE, "*/*"))
+            openBackupLauncher.launch(arrayOf("application/octet-stream", BackupSnapshot.BACKUP_MIME_TYPE, "application/json", "*/*"))
         },
+        onNavigateHomeAfterRestore = onNavigateHomeAfterRestore,
     )
     HandleUpdateResumeEffect(appUpdateViewModel = appUpdateViewModel)
 
@@ -128,6 +163,7 @@ private fun HandleUiEventsEffect(
     tickHaptic: TickHapticFeedback,
     onCreateBackup: (encodedBackup: String, fileName: String) -> Unit,
     onPickRestoreFile: () -> Unit,
+    onNavigateHomeAfterRestore: (YearMonth) -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -150,6 +186,7 @@ private fun HandleUiEventsEffect(
                 }
                 is UiEvent.CreateBackup -> onCreateBackup(event.encodedBackup, event.fileName)
                 UiEvent.PickRestoreFile -> onPickRestoreFile()
+                is UiEvent.NavigateHomeAfterRestore -> onNavigateHomeAfterRestore(event.month)
                 UiEvent.TriggerHaptic -> tickHaptic.performTick()
             }
         }

@@ -109,6 +109,8 @@ sealed interface UiEvent {
 
     data object TriggerHaptic : UiEvent
 
+    data class NavigateHomeAfterRestore(val month: YearMonth) : UiEvent
+
     data class CreateBackup(val encodedBackup: String, val fileName: String) : UiEvent
 
     data object PickRestoreFile : UiEvent
@@ -191,13 +193,15 @@ class OvertimeViewModel(
 
     fun previousMonth() {
         val month = selectedMonth.value.minusMonths(1)
-        selectedMonth.value = month
-        selectedEditorDate.value = null
-        ensureMonth(month)
+        showMonth(month)
     }
 
     fun nextMonth() {
         val month = selectedMonth.value.plusMonths(1)
+        showMonth(month)
+    }
+
+    fun showMonth(month: YearMonth) {
         selectedMonth.value = month
         selectedEditorDate.value = null
         ensureMonth(month)
@@ -427,11 +431,18 @@ class OvertimeViewModel(
                 runCatching {
                     val snapshot = BackupSnapshotCodec().decode(encodedBackup)
                     backupRestoreRepository.restoreSnapshot(snapshot).getOrThrow()
+                    restoredMonthFrom(snapshot)
                 }
             }
             restoreResult
-                .onSuccess {
+                .onSuccess { restoredMonth ->
+                    if (restoredMonth != null) {
+                        showMonth(restoredMonth)
+                    }
                     dismissRestoreConfirmation()
+                    if (restoredMonth != null) {
+                        _events.send(UiEvent.NavigateHomeAfterRestore(restoredMonth))
+                    }
                     _events.send(UiEvent.ShowSnackbar("数据恢复成功"))
                     _events.send(UiEvent.TriggerHaptic)
                 }
@@ -577,4 +588,11 @@ class OvertimeViewModel(
         } else {
             ZeroDecimal
         }
+
+    private fun restoredMonthFrom(snapshot: com.peter.overtimecalculator.domain.BackupSnapshot): YearMonth? {
+        return snapshot.overtimeEntries.maxOfOrNull { java.time.LocalDate.parse(it.date) }?.let { YearMonth.from(it) }
+            ?: snapshot.holidayOverrides.maxOfOrNull { java.time.LocalDate.parse(it.date) }?.let { YearMonth.from(it) }
+            ?: snapshot.monthlyConfigs.filter { it.lockedByUser }.maxOfOrNull { it.yearMonth }
+            ?: snapshot.monthlyConfigs.maxOfOrNull { it.yearMonth }
+    }
 }

@@ -5,8 +5,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import java.time.YearMonth
 
 @Composable
 fun OvertimeCalculatorApp(
@@ -27,6 +29,15 @@ fun OvertimeCalculatorApp(
         updateMessage = updateUiState.message,
         snackbarHostState = snackbarHostState,
         tickHaptic = tickHaptic,
+        onNavigateHomeAfterRestore = { restoredMonth ->
+            viewModel.showMonth(restoredMonth)
+            navController.navigate(HomeRoute) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = false
+                }
+                launchSingleTop = true
+            }
+        },
     )
 
     OvertimeAppShell(
