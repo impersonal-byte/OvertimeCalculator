@@ -26,6 +26,18 @@ interface OvertimeDao {
     @Query("SELECT * FROM holiday_override WHERE date BETWEEN :startDate AND :endDate ORDER BY date ASC")
     suspend fun getOverridesInRange(startDate: String, endDate: String): List<HolidayOverrideEntity>
 
+    @Query("SELECT * FROM overtime_entry ORDER BY date ASC")
+    suspend fun getAllEntries(): List<OvertimeEntryEntity>
+
+    @Query("SELECT * FROM holiday_override ORDER BY date ASC")
+    suspend fun getAllOverrides(): List<HolidayOverrideEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertEntries(entities: List<OvertimeEntryEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertOverrides(entities: List<HolidayOverrideEntity>)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertConfig(entity: MonthlyConfigEntity)
 
