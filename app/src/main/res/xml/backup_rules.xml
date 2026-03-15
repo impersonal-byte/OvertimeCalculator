@@ -10,5 +10,5 @@
     <exclude domain="sharedpref" path="app-update-prefs.xml" />
     
     <!-- Exclude: Holiday cache metadata (refreshed on network, not user-authored) -->
-    <exclude domain="file" path="datastore/holiday-rules.xml" />
+    <exclude domain="file" path="datastore/" />
 </full-backup-content>

@@ -197,21 +197,21 @@ DataStore 当前只用于节假日规则远程缓存。
 | 存储类型 | 文件/路径 | 排除原因 |
 |---------|----------|---------|
 | SharedPreferences | `app-update-prefs.xml` | 更新流程状态（download_id, remote_version, awaiting_permission），与下载管理器强绑定，恢复后状态会失效 |
-| DataStore | `holiday-rules.xml` | 节假日缓存元数据（remote_json, fetched_at_epoch_millis），每次启动会自动从网络刷新 |
+| DataStore | `datastore/` | 节假日缓存元数据（remote_json, fetched_at_epoch_millis），每次启动会自动从网络刷新 |
 
 ### 手动备份范围（.obackup 文件）
 
-手动备份（`.obackup` 文件）包含的数据范围应**大于等于**平台备份，以确保手动恢复是平台迁移的超集：
+手动备份（`.obackup` 文件）范围与平台备份保持一致，确保 restore 行为可预测：
 
-- **包含：** Room 数据库 + 用户偏好（与平台备份一致）
-- **额外包含：** 节假日缓存（`holiday-rules.xml`）— 减少恢复后的网络请求
+- **包含：** Room 数据库（月份配置、加班记录、节假日覆盖）+ 用户偏好
+- **不包含：** 节假日缓存（从网络动态拉取）、更新会话状态
 
 ### 排除数据的恢复预期
 
 | 数据类型 | 恢复后行为 |
 |---------|-----------|
 | UpdateSessionStore (`app-update-prefs.xml`) | 不恢复 — 用户需要重新下载并安装更新 |
-| HolidayRulesRepository (`holiday-rules.xml`) | 自动重新从网络拉取 — 与全新安装行为一致 |
+| HolidayRulesRepository (`datastore/`) | 自动重新从网络拉取 — 与全新安装行为一致 |
 
 ### 关键设计决策
 

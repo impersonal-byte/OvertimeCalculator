@@ -28,11 +28,11 @@ key-files:
 key-decisions:
   - "Exclude UpdateSessionStore from platform backup (volatile download state)"
   - "Exclude HolidayRulesRepository cache from platform backup (network-refreshed)"
-  - "Manual .obackup should include holiday cache as superset of platform backup"
+  - "Manual .obackup scope matches platform backup (Room data only, same as 03-02 contract)"
 
 patterns-established:
   - "Platform auto-backup: Room DB + user preferences only"
-  - "Manual backup: superset including holiday cache"
+  - "Manual backup: same as platform (Room data only, excludes holiday cache)"
   - "Volatile session state excluded from both backup types"
 
 requirements-completed: [DATA-03]
@@ -75,7 +75,7 @@ Each task was committed atomically:
 
 ## Decisions Made
 - Exclude UpdateSessionStore (app-update-prefs.xml) from platform backup - download state becomes invalid after restore
-- Exclude HolidayRulesRepository cache (holiday-rules.xml) - automatically refreshes from network
+- Exclude HolidayRulesRepository cache (datastore/) - automatically refreshes from network
 - Include Room database and user appearance preferences - these are durable user state
 
 ## Deviations from Plan
