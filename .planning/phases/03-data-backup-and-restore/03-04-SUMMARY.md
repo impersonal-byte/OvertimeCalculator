@@ -69,12 +69,16 @@ completed: 2026-03-15
 - Rejected CSV payloads before restore and surfaced clear error messaging
 - Added `BackupRestoreViewModelTest` for create / pick / preview / confirm paths
 - Added `DataManagementBackupRestoreTest` for UI action separation and copy checks
+- Hardened `.obackup` decoding to tolerate BOM / whitespace / trailing null bytes from SAF-backed document providers
+- Updated restore success flow to jump the UI to a month contained in the restored backup instead of leaving the user on a stale month
+- Wrapped destructive restore in a real Room transaction via `AppContainer` + `database.withTransaction`
 
 ## Verification
 
 - ✅ `./gradlew.bat :app:assembleDebug`
 - ✅ `./gradlew.bat :app:testDebugUnitTest`
 - ⚠ `./gradlew.bat :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.peter.overtimecalculator.DataManagementBackupRestoreTest` compiled the test APK but could not run because there is no connected device in this environment
+- ✅ Follow-up regression: app-generated backup content can be previewed by the same restore flow in `BackupRestoreViewModelTest`
 
 ## Files Created/Modified
 
@@ -95,6 +99,8 @@ completed: 2026-03-15
 - The original 03-04 executor was interrupted by network / certificate failures and left partial UI work in the working tree.
 - The interrupted partial implementation used unsafe effect logic (`GlobalScope`) and had no tests; it was replaced with a stable, test-backed implementation.
 - Android instrumentation execution is still environment-blocked without a connected device, so that verification remains pending for a device-enabled run.
+- Manual testing then exposed a restore failure on device before the confirmation dialog. Follow-up fixes hardened JSON parsing for document-provider content, made restore transactional, and switched the UI to a restored month after success so restore does not look like a no-op.
+- Additional manual testing exposed that auto-materialized future config months could pull the post-restore landing month forward. Follow-up fixes changed landing-month selection to prefer the latest meaningful business month (entries/overrides, then locked config months) instead of the latest config row.
 
 ## Next Phase Readiness
 
