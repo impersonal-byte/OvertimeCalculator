@@ -16,7 +16,7 @@
   <a href="https://github.com/impersonal-byte/OvertimeCalculator/releases/latest">下载最新版本</a>
   ·
   <!-- BEGIN:current-release-link -->
-<a href="https://github.com/impersonal-byte/OvertimeCalculator/releases/tag/v2.1.0">查看 v2.1.0</a>
+<a href="https://github.com/impersonal-byte/OvertimeCalculator/releases/tag/v2.2.1">查看 v2.2.1</a>
 <!-- END:current-release-link -->
   ·
   <a href="#功能亮点">功能亮点</a>
@@ -29,8 +29,8 @@
 ## 当前版本
 
 <!-- BEGIN:current-version -->
-- 当前正式版本：`v2.1.0`
-- 当前版本号：`14`
+- 当前正式版本：`v2.2.1`
+- 当前版本号：`16`
 <!-- END:current-version -->
 - 最新正式发布页：`https://github.com/impersonal-byte/OvertimeCalculator/releases/latest`
 
