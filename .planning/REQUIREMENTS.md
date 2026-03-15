@@ -17,6 +17,13 @@ Requirements for the initial GSD planning baseline. Each maps to roadmap phases.
 
 - [ ] **QTK-01**: Maintainer can record ad-hoc investigations under `.planning/quick/` without changing milestone roadmap structure
 
+### Data Portability
+
+- [ ] **DATA-01**: User can create an app-controlled backup that captures the durable overtime business state needed to reconstruct months across devices or reinstalls
+- [ ] **DATA-02**: User can restore a backup through an explicit in-app import flow with validation and clear outcome messaging
+- [ ] **DATA-03**: Restored data preserves `monthly_config`, `overtime_entry`, and `holiday_override` semantics, including month-level configuration propagation behavior
+- [ ] **DATA-04**: CSV export remains available as a lightweight share/export feature and is clearly separate from backup/restore
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -43,10 +50,14 @@ Deferred to future release. Tracked but not in current roadmap.
 | PLAN-02 | Phase 1 | Pending |
 | PLAN-03 | Phase 1 | Pending |
 | QTK-01 | Phase 1 | Pending |
+| DATA-01 | Phase 3 | Pending |
+| DATA-02 | Phase 3 | Pending |
+| DATA-03 | Phase 3 | Pending |
+| DATA-04 | Phase 3 | Pending |
 
 **Coverage:**
-- v1 requirements: 4 total
-- Mapped to phases: 4
+- v1 requirements: 8 total
+- Mapped to phases: 8
 - Unmapped: 0 ✓
 
 ---

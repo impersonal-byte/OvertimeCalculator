@@ -14,6 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Planning Baseline** - Initialize GSD project memory and quick-task support for the existing app
 - [x] **Phase 2: No handwritten input** - Define a non-handwritten, structured day-entry interaction for overtime and comp time
+- [ ] **Phase 3: Data backup and restore** - Close the export-only data gap with app-controlled full-fidelity backup and restore
 
 ## Phase Details
 
@@ -33,12 +34,13 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2
+Phases execute in numeric order: 1 -> 2 -> 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Planning Baseline | 0/1 | Not started | - |
 | 2. No handwritten input | 2/2 | Complete | 2026-03-15 |
+| 3. Data backup and restore | 0/4 | Planned | - |
 
 ### Phase 2: No handwritten input
 
@@ -55,3 +57,22 @@ Phases execute in numeric order: 1 -> 2
 Plans:
 - [x] 02-01: Create centered duration slider with TDD (pure mapping helper + composable)
 - [x] 02-02: Integrate centered slider into day editor sheet
+
+### Phase 3: Data backup and restore
+
+**Goal:** Add an app-controlled backup and restore workflow that can round-trip the full overtime business state across devices or reinstalls without relying on lossy CSV exports or opaque OS-level migration.
+**Requirements**: [DATA-01, DATA-02, DATA-03, DATA-04]
+**Depends on:** Phase 2
+**Plans:** 4 plans
+
+**Success Criteria** (what must be TRUE):
+  1. Users can create a backup from the data-management area that captures the full business state required to reconstruct overtime months, not just a derived CSV view.
+  2. Users can restore a backup through an explicit in-app workflow with validation, clear conflict/replace behavior, and visible success or failure feedback.
+  3. Restored data preserves monthly configuration, overtime entries, holiday overrides, and month-propagation semantics so calculations remain trustworthy after import.
+  4. Existing CSV export remains available as a lightweight share/export feature and is not mislabeled as a full restore path.
+
+Plans:
+- [ ] 03-01: Define versioned backup snapshot contract and codec with TDD
+- [ ] 03-02: Implement persistence-layer backup and restore engine
+- [ ] 03-03: Align Android auto-backup scope with manual restore rules
+- [ ] 03-04: Ship data-management backup/restore UI and flow tests
