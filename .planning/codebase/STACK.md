@@ -1,51 +1,114 @@
-# Stack
+# Technology Stack
 
-## Snapshot
-- Project type: single-module native Android app named `OvertimeCalculator`.
-- Gradle module map lives in `settings.gradle.kts` and includes only `:app`.
-- Root build plugin declarations live in `build.gradle.kts`.
-- Main app build configuration lives in `app/build.gradle.kts`.
+**Analysis Date:** 2026-03-15
 
-## Languages And Runtime
-- Kotlin is the primary implementation language across `app/src/main/java/com/peter/overtimecalculator/**`.
-- Gradle Kotlin DSL is used for build files in `build.gradle.kts`, `settings.gradle.kts`, and `app/build.gradle.kts`.
-- Java 17 is configured in `app/build.gradle.kts`.
-- Android SDK levels are `minSdk = 26`, `compileSdk = 36`, and `targetSdk = 36` in `app/build.gradle.kts`.
+## Languages
 
-## Build Toolchain
-- Gradle wrapper version is pinned in `gradle/wrapper/gradle-wrapper.properties` to `gradle-9.3.1-bin.zip`.
-- Shared Gradle settings live in `gradle.properties` with AndroidX enabled and official Kotlin style.
-- The root plugin block in `build.gradle.kts` declares `com.android.application`, `org.jetbrains.kotlin.plugin.compose`, and `com.android.legacy-kapt`.
-- `app/build.gradle.kts` defines custom tasks `packageReleaseApk`, `printVersionName`, and `printVersionCode`.
+**Primary:**
+- Kotlin 2.2.10 - All application code (UI, domain, data layers)
 
-## Android Frameworks And Libraries
-- Jetpack Compose drives UI in files such as `app/src/main/java/com/peter/overtimecalculator/MainActivity.kt` and `app/src/main/java/com/peter/overtimecalculator/ui/Screens.kt`.
-- Material 3 is used via Compose and `com.google.android.material:material` in `app/build.gradle.kts`.
-- Navigation Compose is used through `app/src/main/java/com/peter/overtimecalculator/ui/Screens.kt` and `app/src/main/java/com/peter/overtimecalculator/ui/settings/SettingsGraphs.kt`.
-- Lifecycle ViewModel and Compose lifecycle bindings are used in `app/src/main/java/com/peter/overtimecalculator/ui/OvertimeViewModel.kt` and `app/src/main/java/com/peter/overtimecalculator/ui/AppUpdateViewModel.kt`.
-- Room persistence is defined in `app/src/main/java/com/peter/overtimecalculator/data/db/AppDatabase.kt`, `app/src/main/java/com/peter/overtimecalculator/data/db/Entities.kt`, and `app/src/main/java/com/peter/overtimecalculator/data/db/OvertimeDao.kt`.
-- DataStore Preferences is used for holiday metadata/cache in `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidayRulesRepository.kt`.
-- WorkManager is used for background sync in `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidaySyncWorker.kt`.
+**Build Configuration:**
+- Kotlin DSL - Gradle build scripts (`build.gradle.kts`, `settings.gradle.kts`)
 
-## Internal Architectural Building Blocks
-- Application bootstrap starts in `app/src/main/java/com/peter/overtimecalculator/OvertimeApplication.kt`.
-- Manual dependency assembly is centralized in `app/src/main/java/com/peter/overtimecalculator/data/AppContainer.kt`.
-- Business rules live under `app/src/main/java/com/peter/overtimecalculator/domain/**`.
-- UI state orchestration lives in `app/src/main/java/com/peter/overtimecalculator/ui/OvertimeViewModel.kt` and `app/src/main/java/com/peter/overtimecalculator/ui/AppUpdateViewModel.kt`.
+## Runtime
 
-## Configuration Hotspots
-- App identity, signing, SDK levels, dependencies, and packaging live in `app/build.gradle.kts`.
-- Manifest-level permissions and `FileProvider` setup live in `app/src/main/AndroidManifest.xml`.
-- Backup and file-sharing XML resources live under `app/src/main/res/xml/`.
-- Bundled holiday seed data lives in `app/src/main/assets/holidays/cn_mainland.json`.
+**Environment:**
+- Android SDK 36 (compileSdk, targetSdk)
+- Android SDK 26 (minSdk)
+- JDK 17 (source/target compatibility)
 
-## Developer Commands
-- Local commands are documented in `README.md`.
-- Unit tests: `./gradlew testDebugUnitTest` or `./gradlew.bat testDebugUnitTest`.
-- Debug build: `./gradlew assembleDebug` or `./gradlew.bat assembleDebug`.
-- Release packaging: `./gradlew packageReleaseApk` or `./gradlew.bat packageReleaseApk`.
+**Build Tool:**
+- Gradle 9.3.1 with wrapper
+- Gradle wrapper properties: `gradle/wrapper/gradle-wrapper.properties`
 
-## Test Stack
-- JVM tests use JUnit 4, `kotlinx-coroutines-test`, AndroidX core-testing, JSON helpers, and Robolectric from `app/build.gradle.kts`.
-- Instrumentation tests use AndroidX JUnit, Espresso, and Compose UI test libraries from `app/build.gradle.kts`.
-- Representative test entry points live in `app/src/test/java/com/peter/overtimecalculator/` and `app/src/androidTest/java/com/peter/overtimecalculator/MainFlowTest.kt`.
+**Package Manager:**
+- Gradle (no separate package manager, dependencies in `build.gradle.kts`)
+
+## Frameworks
+
+**Core:**
+- Jetpack Compose (BOM 2026.01.01) - UI framework
+- Material 3 (material3:1.3.0) - Design system
+- Navigation Compose 2.9.7 - Navigation
+- AndroidX Core KTX 1.17.0 - Kotlin extensions
+
+**Architecture:**
+- AndroidX Lifecycle 2.8.6 - ViewModel, runtime-compose, viewmodel-compose
+- AndroidX Activity Compose 1.12.4 - Single Activity architecture
+
+**Data Persistence:**
+- Room 2.8.4 - SQLite ORM with Kotlin coroutines support
+- DataStore Preferences 1.1.1 - Key-value preferences storage
+
+**Background Processing:**
+- WorkManager 2.10.1 - Background sync worker for holiday data
+
+**Testing:**
+- JUnit4 4.13.2 - Unit test framework
+- Robolectric 4.14.1 - Android unit test runner
+- AndroidX Test Core 1.6.1 - Android testing utilities
+- AndroidX Compose UI Test JUnit4 - Compose UI testing
+- kotlinx-coroutines-test 1.10.2 - Coroutine testing utilities
+- androidx.arch.core:core-testing 2.2.0 - Architecture testing utilities
+
+## Key Dependencies
+
+**Compose (BOM 2026.01.01):**
+- `androidx.compose.ui:ui` - Core Compose UI
+- `androidx.compose.ui:ui-tooling-preview` - Preview support
+- `androidx.compose.foundation:foundation` - Foundation components
+- `androidx.compose.material3:material3` - Material 3 components
+- `androidx.compose.material:material-icons-extended` - Material icons
+
+**AndroidX:**
+- `androidx.core:core-ktx:1.17.0` - Kotlin extensions
+- `androidx.lifecycle:lifecycle-runtime-ktx:2.8.6` - Lifecycle support
+- `androidx.lifecycle:lifecycle-runtime-compose:2.8.6` - Compose integration
+- `androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6` - ViewModel Compose
+- `androidx.activity:activity-compose:1.12.4` - Compose Activity
+- `androidx.navigation:navigation-compose:2.9.7` - Navigation
+- `androidx.room:room-runtime:2.8.4` - Room database
+- `androidx.room:room-ktx:2.8.4` - Room coroutines
+- `androidx.datastore:datastore-preferences:1.1.1` - DataStore
+- `androidx.work:work-runtime-ktx:2.10.1` - WorkManager
+- `com.google.android.material:material:1.13.0` - Material components
+
+**Testing:**
+- `junit:junit:4.13.2` - JUnit framework
+- `org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2` - Coroutine test
+- `androidx.arch.core:core-testing:2.2.0` - Arch test helpers
+- `androidx.test:core:1.6.1` - Android test core
+- `org.json:json:20240303` - JSON parsing for tests
+- `org.robolectric:robolectric:4.14.1` - Android test runner
+
+## Configuration
+
+**Environment:**
+- `local.properties` - SDK directory configuration (`sdk.dir`)
+- Signing configuration in `local.properties` for release builds:
+  - `signing.storeFile`, `signing.keyAlias`, `signing.storePassword`, `signing.keyPassword`
+
+**Build Configuration:**
+- `build.gradle.kts` - Root project configuration
+- `app/build.gradle.kts` - App module configuration (version 2.1.0, versionCode 14)
+- `settings.gradle.kts` - Project settings
+- `gradle.properties` - Gradle JVM args, AndroidX flags, Kotlin code style
+
+**Android Config:**
+- Namespace: `com.peter.overtimecalculator`
+- Application ID: `com.peter.overtimecalculator` (debug: `.debug` suffix)
+
+## Platform Requirements
+
+**Development:**
+- Android Studio with Android SDK
+- JDK 17
+- Gradle 9.3.1+ (via wrapper)
+
+**Production:**
+- Android 8.0+ (API 26+)
+- No special runtime requirements
+
+---
+
+*Stack analysis: 2026-03-15*

@@ -1,54 +1,121 @@
-# Integrations
+# External Integrations
 
-## Snapshot
-- The app is mostly self-contained, but it integrates with Android platform services, one public holiday API, and GitHub releases.
-- Most integrations are wired from `app/src/main/java/com/peter/overtimecalculator/data/**`.
+**Analysis Date:** 2026-03-15
 
-## Local Storage
-- Room stores monthly config, overtime entries, and holiday overrides through `app/src/main/java/com/peter/overtimecalculator/data/db/AppDatabase.kt`.
-- Table models live in `app/src/main/java/com/peter/overtimecalculator/data/db/Entities.kt`.
-- Query and write access live in `app/src/main/java/com/peter/overtimecalculator/data/db/OvertimeDao.kt`.
-- Repository orchestration over Room lives in `app/src/main/java/com/peter/overtimecalculator/data/repository/OvertimeRepository.kt`.
+## APIs & External Services
 
-## Preference Storage
-- DataStore Preferences is used in `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidayRulesRepository.kt` to cache remote holiday JSON and fetch metadata.
-- `SharedPreferences` is used in `app/src/main/java/com/peter/overtimecalculator/ui/OvertimeViewModel.kt` for appearance and calendar preferences.
-- `SharedPreferences` is also used in `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateManager.kt` for pending download and install-permission state.
+**Holiday data API:**
+- Service: `https://api.haoshenqi.top/holiday?date=%d`
+- Call site: `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidayRulesRepository.kt`
+- HTTP client: `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidayRemoteClient.kt`
+- Parsing: `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidayHaoshenqiApiParser.kt`
+- Auth: none
+- Purpose: fetch current year and next year holiday overrides, then merge them over the bundled baseline asset
 
-## Remote Holiday Rules
-- The holiday subsystem starts with bundled baseline data in `app/src/main/assets/holidays/cn_mainland.json`.
-- Remote refresh logic lives in `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidayRulesRepository.kt`.
-- The remote endpoint template is `https://api.haoshenqi.top/holiday?date=%d` in `HolidayRulesRepository.kt`.
-- Parsing support lives in `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidayHaoshenqiApiParser.kt` and `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidayRulesJsonParser.kt`.
+**GitHub Releases API:**
+- Service: `https://api.github.com/repos/impersonal-byte/OvertimeCalculator/releases/latest`
+- Call site: `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateReleaseChecker.kt`
+- Headers:
+  - `Accept: application/vnd.github+json`
+  - `X-GitHub-Api-Version: 2022-11-28`
+  - `User-Agent: OvertimeCalculator/{currentVersionName}`
+- Auth: none
+- Purpose: check whether a newer APK release exists and extract release notes plus download URL
 
-## Background Work
-- Periodic holiday refresh is scheduled through WorkManager in `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidaySyncWorker.kt`.
-- Startup scheduling is triggered from `app/src/main/java/com/peter/overtimecalculator/OvertimeApplication.kt` via `appContainer.scheduleHolidaySync()`.
-- The worker uses a connected-network constraint and `enqueueUniquePeriodicWork` in `HolidaySyncWorker.kt`.
+**GitHub release asset downloads:**
+- Download target comes from the release asset selected in `app/src/main/java/com/peter/overtimecalculator/domain/AppUpdateModels.kt`
+- Download orchestration lives in `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateDownloadGateway.kt`
+- APK installation handoff lives in `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateInstallGateway.kt`
 
-## App Update Flow
-- GitHub release checks are implemented in `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateManager.kt`.
-- The latest-release endpoint is `https://api.github.com/repos/impersonal-byte/OvertimeCalculator/releases/latest` in `UpdateManager.kt`.
-- Download/install orchestration surfaces through `app/src/main/java/com/peter/overtimecalculator/ui/AppUpdateViewModel.kt`.
-- About/update UI entry points live in `app/src/main/java/com/peter/overtimecalculator/ui/settings/AboutScreen.kt` and `app/src/main/java/com/peter/overtimecalculator/ui/settings/SettingsGraphs.kt`.
+## Local Platform Integrations
 
-## File Sharing And Export
-- CSV export file generation happens in `app/src/main/java/com/peter/overtimecalculator/ui/OvertimeViewModel.kt`.
-- Share intent dispatch happens in `app/src/main/java/com/peter/overtimecalculator/ui/Screens.kt`.
-- `FileProvider` is declared in `app/src/main/AndroidManifest.xml` and configured by `app/src/main/res/xml/file_paths.xml`.
+**Room / SQLite:**
+- Database definition: `app/src/main/java/com/peter/overtimecalculator/data/db/AppDatabase.kt`
+- DAO: `app/src/main/java/com/peter/overtimecalculator/data/db/OvertimeDao.kt`
+- Entities: `app/src/main/java/com/peter/overtimecalculator/data/db/Entities.kt`
+- Exported schema directory: `app/schemas/com.peter.overtimecalculator.data.db.AppDatabase/`
+- Purpose: persist monthly config, overtime entries, and manual holiday overrides
 
-## Android Platform Services
-- `DownloadManager` is used in `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateManager.kt`.
-- Install permission routing uses `Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES` in `UpdateManager.kt`.
-- Vibration capability is requested in `app/src/main/AndroidManifest.xml`, with UI haptic hooks under `app/src/main/java/com/peter/overtimecalculator/ui/TickHapticFeedback.kt`.
+**DataStore Preferences:**
+- Implementation: `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidayRulesRepository.kt`
+- Keys:
+  - `remote_json`
+  - `fetched_at_epoch_millis`
+  - `remote_updated_at`
+- Purpose: cache remote holiday overlay JSON and refresh metadata
 
-## CI And Release Infrastructure
-- Manual verification workflow lives in `.github/workflows/ci.yml`.
-- Tag-based release workflow lives in `.github/workflows/release.yml`.
-- Release notes can be sourced from `docs/releases/*.md`, selected in `.github/workflows/release.yml`.
-- Release signing expects secrets and generates `local.properties` in CI according to `.github/workflows/release.yml`.
+**SharedPreferences:**
+- Appearance preferences: `app/src/main/java/com/peter/overtimecalculator/data/AppearancePreferencesRepository.kt`
+- Update session state: `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateSessionStore.kt`
+- Purpose: keep theme/calendar preferences and APK download/install session state
 
-## Sensitive Integration Edges
-- `app/build.gradle.kts` reads signing values from `local.properties`.
-- The repo root also contains `OvertimeCalculator.jks` and `OvertimeCalculator.jks.base64.txt`, which should be treated as high-risk operational artifacts.
-- No cloud backend, auth provider, or analytics SDK is visible in the current codebase.
+**WorkManager:**
+- Worker: `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidaySyncWorker.kt`
+- Startup scheduling: `app/src/main/java/com/peter/overtimecalculator/OvertimeApplication.kt`
+- Purpose: enqueue periodic holiday refresh work with network constraint
+
+**Android system services and framework hooks:**
+- `DownloadManager`: `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateManager.kt`, `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateDownloadGateway.kt`
+- `FileProvider`: `app/src/main/AndroidManifest.xml`, `app/src/main/res/xml/file_paths.xml`
+- Install permission flow: `android.permission.REQUEST_INSTALL_PACKAGES` in `app/src/main/AndroidManifest.xml`
+
+## CI/CD & Repository Automation
+
+**Manual verification workflow:**
+- File: `.github/workflows/ci.yml`
+- Trigger: `workflow_dispatch`
+- Steps:
+  - run `testDebugUnitTest`
+  - build debug APK with `assembleDebug`
+  - run `MainSmokeTest` on an emulator via `reactivecircus/android-emulator-runner@v2`
+
+**Release workflow:**
+- File: `.github/workflows/release.yml`
+- Trigger: push tag `v*` or manual dispatch
+- Responsibilities:
+  - validate signing secrets exist
+  - generate CI `local.properties`
+  - validate Git tag matches `appVersionName`
+  - run unit tests
+  - build signed release APK via `packageReleaseApk`
+  - publish GitHub Release
+  - sync version metadata back into `README.md`
+
+**Release secrets referenced by workflow:**
+- `SIGNING_KEY`
+- `ALIAS`
+- `KEY_STORE_PASSWORD`
+- `KEY_PASSWORD`
+
+## Authentication & Identity
+
+**Application auth:**
+- None found
+- The app is local-first and does not define user accounts, login flows, or token exchange
+
+## Incoming/Outgoing Boundaries
+
+**Outgoing calls:**
+- Holiday API requests to `api.haoshenqi.top`
+- GitHub API requests to `api.github.com`
+- APK download requests through `DownloadManager`
+
+**Incoming callbacks / webhooks:**
+- None found in repository code
+- No server endpoints, webhook handlers, or background push receivers are defined
+
+## Configuration Surface
+
+**Local development:**
+- `local.properties` must provide `sdk.dir`
+- Release signing values can also live in `local.properties` for local packaging
+
+**Build configuration:**
+- Root plugins: `build.gradle.kts`
+- App module config and dependency versions: `app/build.gradle.kts`
+- Repository settings: `settings.gradle.kts`
+- Gradle flags: `gradle.properties`
+
+---
+
+*Integration audit: 2026-03-15*
