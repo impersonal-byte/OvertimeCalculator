@@ -1,15 +1,28 @@
 package com.peter.overtimecalculator.ui
 
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.compose.material3.SnackbarHostState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peter.overtimecalculator.domain.BackupSnapshot
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun OvertimeAppEffects(
@@ -19,6 +32,54 @@ internal fun OvertimeAppEffects(
     snackbarHostState: SnackbarHostState,
     tickHaptic: TickHapticFeedback,
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val restoreConfirmation by viewModel.restoreConfirmation.collectAsStateWithLifecycle()
+    var pendingBackupContent by remember { mutableStateOf<String?>(null) }
+
+    val createBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument(BackupSnapshot.BACKUP_MIME_TYPE),
+    ) { uri ->
+        val encodedBackup = pendingBackupContent
+        pendingBackupContent = null
+        if (uri == null || encodedBackup == null) {
+            return@rememberLauncherForActivityResult
+        }
+
+        runCatching {
+            context.contentResolver.openOutputStream(uri)?.use { output ->
+                output.write(encodedBackup.toByteArray(Charsets.UTF_8))
+            } ?: error("无法创建备份文件")
+        }.onSuccess {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("备份已保存")
+            }
+        }.onFailure {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("保存备份失败，请稍后重试")
+            }
+        }
+    }
+
+    val openBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) {
+            return@rememberLauncherForActivityResult
+        }
+
+        runCatching {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                input.bufferedReader().readText()
+            } ?: error("无法读取备份文件")
+        }.onSuccess(viewModel::previewRestoreBackup)
+            .onFailure {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("读取备份文件失败，请稍后重试")
+                }
+            }
+    }
+
     HandleUpdateMessageEffect(
         updateMessage = updateMessage,
         onMessageConsumed = appUpdateViewModel::clearMessage,
@@ -28,8 +89,23 @@ internal fun OvertimeAppEffects(
         viewModel = viewModel,
         snackbarHostState = snackbarHostState,
         tickHaptic = tickHaptic,
+        onCreateBackup = { encodedBackup, fileName ->
+            pendingBackupContent = encodedBackup
+            createBackupLauncher.launch(fileName)
+        },
+        onPickRestoreFile = {
+            openBackupLauncher.launch(arrayOf(BackupSnapshot.BACKUP_MIME_TYPE, "*/*"))
+        },
     )
     HandleUpdateResumeEffect(appUpdateViewModel = appUpdateViewModel)
+
+    restoreConfirmation?.let { confirmation ->
+        RestoreConfirmationDialog(
+            confirmation = confirmation,
+            onConfirm = viewModel::confirmRestore,
+            onDismiss = viewModel::dismissRestoreConfirmation,
+        )
+    }
 }
 
 @Composable
@@ -50,6 +126,8 @@ private fun HandleUiEventsEffect(
     viewModel: OvertimeViewModel,
     snackbarHostState: SnackbarHostState,
     tickHaptic: TickHapticFeedback,
+    onCreateBackup: (encodedBackup: String, fileName: String) -> Unit,
+    onPickRestoreFile: () -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -70,10 +148,40 @@ private fun HandleUiEventsEffect(
                     }
                     context.startActivity(Intent.createChooser(shareIntent, "导出本月加薪数据"))
                 }
+                is UiEvent.CreateBackup -> onCreateBackup(event.encodedBackup, event.fileName)
+                UiEvent.PickRestoreFile -> onPickRestoreFile()
                 UiEvent.TriggerHaptic -> tickHaptic.performTick()
             }
         }
     }
+}
+
+@Composable
+private fun RestoreConfirmationDialog(
+    confirmation: RestoreConfirmationUiState,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("确认恢复备份") },
+        text = {
+            Text(
+                "将恢复 ${confirmation.monthCount} 个月配置、${confirmation.entryCount} 条加班记录、" +
+                    "${confirmation.overrideCount} 条节假日覆盖。当前数据会被覆盖。",
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("确认恢复")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        },
+    )
 }
 
 @Composable
