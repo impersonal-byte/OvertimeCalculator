@@ -1,5 +1,6 @@
 package com.peter.overtimecalculator
 
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
@@ -8,6 +9,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -86,7 +88,8 @@ class MainFlowTest {
         waitForTag("day_editor_sheet")
 
         composeRule.onNodeWithTag("clear_duration").performClick()
-        composeRule.onNodeWithTag("preset_120").performClick()
+        composeRule.onNodeWithTag("duration_slider")
+            .performSemanticsAction(SemanticsActions.SetProgress) { action -> action(0.625f) }
         composeRule.onNodeWithTag("editor_save").performClick()
 
         composeRule.waitUntil(10_000) {
@@ -103,7 +106,8 @@ class MainFlowTest {
         waitForTag("day_editor_sheet")
 
         composeRule.onNodeWithTag("clear_duration").performClick()
-        composeRule.onNodeWithTag("preset_120").performClick()
+        composeRule.onNodeWithTag("duration_slider")
+            .performSemanticsAction(SemanticsActions.SetProgress) { action -> action(0.625f) }
         composeRule.onNodeWithTag("editor_save").performClick()
         composeRule.waitUntil(10_000) {
             composeRule.onAllNodesWithTag("day_editor_sheet").fetchSemanticsNodes().isEmpty()

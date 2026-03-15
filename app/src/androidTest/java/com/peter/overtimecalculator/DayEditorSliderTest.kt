@@ -31,7 +31,7 @@ class DayEditorSliderTest {
     }
 
     @Test
-    fun dayEditorShowsSliderAndPreservesPresetFlow() {
+    fun dayEditorShowsSliderWithoutPresetChips() {
         val editableDate = editableDate()
 
         composeRule.onNodeWithTag(dayCardTag(editableDate)).performClick()
@@ -40,9 +40,12 @@ class DayEditorSliderTest {
         composeRule.onNodeWithTag("duration_slider").assertIsDisplayed()
         composeRule.onNodeWithTag("center_marker").assertIsDisplayed()
         composeRule.onNodeWithTag("tick_0").assertIsDisplayed()
+        composeRule.onAllNodesWithTag("preset_120").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("preset_-120").assertCountEquals(0)
 
-        composeRule.onNodeWithTag("preset_120").performClick()
-        composeRule.onNodeWithTag("editor_duration_value").assertTextContains("2.0h")
+        composeRule.onNodeWithTag("duration_slider")
+            .performSemanticsAction(SemanticsActions.SetProgress) { action -> action(0.625f) }
+        composeRule.onNodeWithTag("editor_duration_value").assertTextContains("4.0h")
 
         composeRule.onNodeWithTag("clear_duration").performClick()
         composeRule.onNodeWithTag("editor_duration_value").assertTextContains("0.0h")
@@ -69,6 +72,7 @@ class DayEditorSliderTest {
         waitForTag("day_editor_sheet")
         composeRule.onNodeWithTag("override_rest_day").performClick()
         composeRule.onAllNodesWithTag("preset_-120").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("preset_120").assertCountEquals(0)
 
         composeRule.onNodeWithTag("clear_duration").performClick()
         composeRule.onNodeWithTag("duration_slider")
