@@ -40,7 +40,7 @@ Phases execute in numeric order: 1 -> 2 -> 3
 |-------|----------------|--------|-----------|
 | 1. Planning Baseline | 0/1 | Not started | - |
 | 2. No handwritten input | 2/2 | Complete | 2026-03-15 |
-| 3. Data backup and restore | 0/4 | Planned | - |
+| 3. Data backup and restore | 1/4 | In Progress | 2026-03-15 |
 
 ### Phase 2: No handwritten input
 
@@ -72,7 +72,7 @@ Plans:
   4. Existing CSV export remains available as a lightweight share/export feature and is not mislabeled as a full restore path.
 
 Plans:
-- [ ] 03-01: Define versioned backup snapshot contract and codec with TDD
+- [x] 03-01: Define versioned backup snapshot contract and codec with TDD
 - [ ] 03-02: Implement persistence-layer backup and restore engine
 - [ ] 03-03: Align Android auto-backup scope with manual restore rules
 - [ ] 03-04: Ship data-management backup/restore UI and flow tests
