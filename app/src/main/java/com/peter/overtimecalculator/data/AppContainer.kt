@@ -17,6 +17,8 @@ import com.peter.overtimecalculator.domain.ReverseHourlyRateCalculator
 import com.peter.overtimecalculator.domain.SaveOvertimeUseCase
 import com.peter.overtimecalculator.domain.UpdateManualHourlyRateUseCase
 import com.peter.overtimecalculator.domain.UpdateMultipliersUseCase
+import com.peter.overtimecalculator.data.backup.BackupRestoreRepository
+import com.peter.overtimecalculator.data.backup.BackupSnapshotCodec
 import kotlinx.coroutines.CoroutineScope
 
 class AppContainer(
@@ -59,6 +61,11 @@ class AppContainer(
     val updateMultipliersUseCase = UpdateMultipliersUseCase(repository)
 
     val reverseEngineerHourlyRateUseCase = ReverseEngineerHourlyRateUseCase(repository)
+
+    val backupRestoreRepository: BackupRestoreRepository = BackupRestoreRepository(
+        dao = database.overtimeDao(),
+        codec = BackupSnapshotCodec(),
+    )
 
     fun scheduleHolidaySync() {
         HolidaySyncWorker.enqueue(context)
