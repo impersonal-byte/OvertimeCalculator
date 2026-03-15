@@ -133,6 +133,41 @@ class BackupSnapshotTest {
     }
 
     @Test
+    fun decode_acceptsBackupPayloadWithBomWhitespaceAndTrailingNoise() {
+        val encoded = codec.encode(
+            BackupSnapshot(
+                schemaVersion = 1,
+                createdAt = Instant.now().toString(),
+                monthlyConfigs = listOf(
+                    BackupMonthlyConfig(
+                        yearMonth = YearMonth.of(2026, 4),
+                        hourlyRate = BigDecimal("88.00"),
+                        rateSource = HourlyRateSource.MANUAL,
+                        weekdayRate = BigDecimal("1.50"),
+                        restDayRate = BigDecimal("2.00"),
+                        holidayRate = BigDecimal("3.00"),
+                        lockedByUser = true,
+                    ),
+                ),
+                overtimeEntries = listOf(BackupOvertimeEntry(date = "2026-04-05", minutes = 60)),
+                holidayOverrides = listOf(BackupHolidayOverride(date = "2026-04-06", dayType = DayType.REST_DAY)),
+            ),
+        )
+
+        val payloadFromDocumentProvider = "\uFEFF\n  $encoded\u0000\n"
+
+        val decoded = codec.decode(payloadFromDocumentProvider)
+
+        assertEquals(1, decoded.schemaVersion)
+        assertEquals(1, decoded.monthlyConfigs.size)
+        assertEquals(YearMonth.of(2026, 4), decoded.monthlyConfigs.first().yearMonth)
+        assertEquals(1, decoded.overtimeEntries.size)
+        assertEquals("2026-04-05", decoded.overtimeEntries.first().date)
+        assertEquals(1, decoded.holidayOverrides.size)
+        assertEquals(DayType.REST_DAY, decoded.holidayOverrides.first().dayType)
+    }
+
+    @Test
     fun snapshotContract_doesNotIncludeUpdateSessionOrHolidayCacheMetadata() {
         // Given: A snapshot as it would be created from entities
         val snapshot = BackupSnapshot(

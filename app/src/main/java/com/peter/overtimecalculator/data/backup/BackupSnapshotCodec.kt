@@ -9,6 +9,8 @@ import com.peter.overtimecalculator.domain.HourlyRateSource
 import com.peter.overtimecalculator.domain.RestorePreview
 import java.math.BigDecimal
 import java.time.YearMonth
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * Codec for encoding and decoding backup snapshots.
@@ -22,30 +24,28 @@ class BackupSnapshotCodec {
      * Encode a BackupSnapshot to a JSON string.
      */
     fun encode(snapshot: BackupSnapshot): String {
-        return buildString {
-            append("{")
-            append("\"schemaVersion\":${snapshot.schemaVersion},")
-            append("\"createdAt\":\"${snapshot.createdAt}\",")
-            append("\"monthlyConfigs\":[")
-            snapshot.monthlyConfigs.forEachIndexed { index, config ->
-                if (index > 0) append(",")
-                append(encodeMonthlyConfig(config))
-            }
-            append("],")
-            append("\"overtimeEntries\":[")
-            snapshot.overtimeEntries.forEachIndexed { index, entry ->
-                if (index > 0) append(",")
-                append(encodeOvertimeEntry(entry))
-            }
-            append("],")
-            append("\"holidayOverrides\":[")
-            snapshot.holidayOverrides.forEachIndexed { index, override ->
-                if (index > 0) append(",")
-                append(encodeHolidayOverride(override))
-            }
-            append("]")
-            append("}")
-        }
+        return JSONObject().apply {
+            put("schemaVersion", snapshot.schemaVersion)
+            put("createdAt", snapshot.createdAt)
+            put(
+                "monthlyConfigs",
+                JSONArray().apply {
+                    snapshot.monthlyConfigs.forEach { put(encodeMonthlyConfig(it)) }
+                },
+            )
+            put(
+                "overtimeEntries",
+                JSONArray().apply {
+                    snapshot.overtimeEntries.forEach { put(encodeOvertimeEntry(it)) }
+                },
+            )
+            put(
+                "holidayOverrides",
+                JSONArray().apply {
+                    snapshot.holidayOverrides.forEach { put(encodeHolidayOverride(it)) }
+                },
+            )
+        }.toString()
     }
 
     /**
@@ -53,18 +53,25 @@ class BackupSnapshotCodec {
      * @throws IllegalArgumentException if schema version is not supported
      */
     fun decode(json: String): BackupSnapshot {
-        // Simple JSON parsing without external library
-        val schemaVersion = extractInt(json, "schemaVersion")
-        val createdAt = extractString(json, "createdAt")
+        val normalized = sanitize(json)
+        val root = JSONObject(normalized)
+        val schemaVersion = root.optInt("schemaVersion", -1)
+        val createdAt = root.optString("createdAt")
+        if (schemaVersion == -1) {
+            throw IllegalArgumentException("Missing key: schemaVersion")
+        }
+        if (createdAt.isBlank()) {
+            throw IllegalArgumentException("Missing key: createdAt")
+        }
         
         // Validate schema version
         if (schemaVersion !in BackupSnapshot.SUPPORTED_VERSIONS) {
             throw IllegalArgumentException("Unsupported backup schema version: $schemaVersion. Supported versions: ${BackupSnapshot.SUPPORTED_VERSIONS}")
         }
         
-        val monthlyConfigs = decodeMonthlyConfigs(json)
-        val overtimeEntries = decodeOvertimeEntries(json)
-        val holidayOverrides = decodeHolidayOverrides(json)
+        val monthlyConfigs = decodeMonthlyConfigs(root.optJSONArray("monthlyConfigs") ?: JSONArray())
+        val overtimeEntries = decodeOvertimeEntries(root.optJSONArray("overtimeEntries") ?: JSONArray())
+        val holidayOverrides = decodeHolidayOverrides(root.optJSONArray("holidayOverrides") ?: JSONArray())
         
         return BackupSnapshot(
             schemaVersion = schemaVersion,
@@ -95,89 +102,88 @@ class BackupSnapshotCodec {
         }
     }
 
-    private fun encodeMonthlyConfig(config: BackupMonthlyConfig): String {
-        return buildString {
-            append("{")
-            append("\"yearMonth\":\"${config.yearMonth}\",")
-            append("\"hourlyRate\":\"${config.hourlyRate}\",")
-            append("\"rateSource\":\"${config.rateSource.name}\",")
-            append("\"weekdayRate\":\"${config.weekdayRate}\",")
-            append("\"restDayRate\":\"${config.restDayRate}\",")
-            append("\"holidayRate\":\"${config.holidayRate}\",")
-            append("\"lockedByUser\":${config.lockedByUser}")
-            append("}")
+    private fun encodeMonthlyConfig(config: BackupMonthlyConfig): JSONObject {
+        return JSONObject().apply {
+            put("yearMonth", config.yearMonth.toString())
+            put("hourlyRate", config.hourlyRate.toString())
+            put("rateSource", config.rateSource.name)
+            put("weekdayRate", config.weekdayRate.toString())
+            put("restDayRate", config.restDayRate.toString())
+            put("holidayRate", config.holidayRate.toString())
+            put("lockedByUser", config.lockedByUser)
         }
     }
 
-    private fun encodeOvertimeEntry(entry: BackupOvertimeEntry): String {
-        return "{\"date\":\"${entry.date}\",\"minutes\":${entry.minutes}}"
+    private fun encodeOvertimeEntry(entry: BackupOvertimeEntry): JSONObject {
+        return JSONObject().apply {
+            put("date", entry.date)
+            put("minutes", entry.minutes)
+        }
     }
 
-    private fun encodeHolidayOverride(override: BackupHolidayOverride): String {
-        return "{\"date\":\"${override.date}\",\"dayType\":\"${override.dayType.name}\"}"
+    private fun encodeHolidayOverride(override: BackupHolidayOverride): JSONObject {
+        return JSONObject().apply {
+            put("date", override.date)
+            put("dayType", override.dayType.name)
+        }
     }
 
-    private fun extractInt(json: String, key: String): Int {
-        val regex = """"$key"\s*:\s*(\d+)""".toRegex()
-        val match = regex.find(json) ?: throw IllegalArgumentException("Missing key: $key")
-        return match.groupValues[1].toInt()
-    }
-
-    private fun extractString(json: String, key: String): String {
-        val regex = """"$key"\s*:\s*"([^"]*)"""".toRegex()
-        val match = regex.find(json) ?: throw IllegalArgumentException("Missing key: $key")
-        return match.groupValues[1]
-    }
-
-    private fun decodeMonthlyConfigs(json: String): List<BackupMonthlyConfig> {
-        val configs = mutableListOf<BackupMonthlyConfig>()
-        // Match each config object within the monthlyConfigs array
-        val configRegex = """\{"yearMonth":"([^"]+)","hourlyRate":"([^"]+)","rateSource":"([^"]+)","weekdayRate":"([^"]+)","restDayRate":"([^"]+)","holidayRate":"([^"]+)","lockedByUser":(true|false)}""".toRegex()
-        
-        // Find all matches in the entire JSON (not just within extracted array)
-        configRegex.findAll(json).forEach { m ->
-            configs.add(
-                BackupMonthlyConfig(
-                    yearMonth = YearMonth.parse(m.groupValues[1]),
-                    hourlyRate = BigDecimal(m.groupValues[2]),
-                    rateSource = HourlyRateSource.valueOf(m.groupValues[3]),
-                    weekdayRate = BigDecimal(m.groupValues[4]),
-                    restDayRate = BigDecimal(m.groupValues[5]),
-                    holidayRate = BigDecimal(m.groupValues[6]),
-                    lockedByUser = m.groupValues[7].toBoolean(),
+    private fun decodeMonthlyConfigs(array: JSONArray): List<BackupMonthlyConfig> {
+        return buildList {
+            for (index in 0 until array.length()) {
+                val config = array.getJSONObject(index)
+                add(
+                    BackupMonthlyConfig(
+                        yearMonth = YearMonth.parse(config.getString("yearMonth")),
+                        hourlyRate = BigDecimal(config.getString("hourlyRate")),
+                        rateSource = HourlyRateSource.valueOf(config.getString("rateSource")),
+                        weekdayRate = BigDecimal(config.getString("weekdayRate")),
+                        restDayRate = BigDecimal(config.getString("restDayRate")),
+                        holidayRate = BigDecimal(config.getString("holidayRate")),
+                        lockedByUser = config.getBoolean("lockedByUser"),
+                    ),
                 )
-            )
+            }
         }
-        return configs
     }
 
-    private fun decodeOvertimeEntries(json: String): List<BackupOvertimeEntry> {
-        val entries = mutableListOf<BackupOvertimeEntry>()
-        val entryRegex = """\{"date":"([^"]+)","minutes":(-?\d+)}""".toRegex()
-        
-        entryRegex.findAll(json).forEach { m ->
-            entries.add(
-                BackupOvertimeEntry(
-                    date = m.groupValues[1],
-                    minutes = m.groupValues[2].toInt(),
+    private fun decodeOvertimeEntries(array: JSONArray): List<BackupOvertimeEntry> {
+        return buildList {
+            for (index in 0 until array.length()) {
+                val entry = array.getJSONObject(index)
+                add(
+                    BackupOvertimeEntry(
+                        date = entry.getString("date"),
+                        minutes = entry.getInt("minutes"),
+                    ),
                 )
-            )
+            }
         }
-        return entries
     }
 
-    private fun decodeHolidayOverrides(json: String): List<BackupHolidayOverride> {
-        val overrides = mutableListOf<BackupHolidayOverride>()
-        val overrideRegex = """\{"date":"([^"]+)","dayType":"([^"]+)"}""".toRegex()
-        
-        overrideRegex.findAll(json).forEach { m ->
-            overrides.add(
-                BackupHolidayOverride(
-                    date = m.groupValues[1],
-                    dayType = DayType.valueOf(m.groupValues[2]),
+    private fun decodeHolidayOverrides(array: JSONArray): List<BackupHolidayOverride> {
+        return buildList {
+            for (index in 0 until array.length()) {
+                val override = array.getJSONObject(index)
+                add(
+                    BackupHolidayOverride(
+                        date = override.getString("date"),
+                        dayType = DayType.valueOf(override.getString("dayType")),
+                    ),
                 )
-            )
+            }
         }
-        return overrides
+    }
+
+    private fun sanitize(raw: String): String {
+        val withoutBom = raw.removePrefix("\uFEFF")
+        val withoutNulls = withoutBom.replace("\u0000", "")
+        val trimmed = withoutNulls.trim()
+        val objectStart = trimmed.indexOf('{')
+        val objectEnd = trimmed.lastIndexOf('}')
+        if (objectStart >= 0 && objectEnd >= objectStart) {
+            return trimmed.substring(objectStart, objectEnd + 1)
+        }
+        return trimmed
     }
 }
