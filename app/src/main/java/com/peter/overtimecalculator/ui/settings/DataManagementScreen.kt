@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DataManagementScreen(
+    onBackupClick: () -> Unit,
+    onRestoreClick: () -> Unit,
     onExportDataClick: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -38,6 +40,12 @@ fun DataManagementScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item { Spacer(modifier = Modifier.height(4.dp)) }
+            item {
+                BackupSection(onBackupClick = onBackupClick)
+            }
+            item {
+                RestoreSection(onRestoreClick = onRestoreClick)
+            }
             item {
                 ExportDataSection(onExportDataClick = onExportDataClick)
             }
