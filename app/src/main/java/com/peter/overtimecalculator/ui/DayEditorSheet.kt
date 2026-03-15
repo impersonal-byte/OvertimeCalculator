@@ -1,16 +1,12 @@
 package com.peter.overtimecalculator.ui
 
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -32,7 +28,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,11 +37,8 @@ import com.peter.overtimecalculator.domain.OvertimeEntryValidator
 import com.peter.overtimecalculator.ui.components.CenteredDurationSlider
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlinx.coroutines.withTimeoutOrNull
 
 private const val DurationStepMinutes = 30
-private val PositiveDurationPresetsMinutes = listOf(30, 60, 90, 120, 180, 240, 360, 480, 600, 720, 840, 960)
-private val NegativeDurationPresetsMinutes = listOf(-30, -60, -120, -240, -480)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -92,7 +84,19 @@ internal fun CompTimeDayEditorSheet(
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("工时调整", style = MaterialTheme.typography.titleMedium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("工时调整", style = MaterialTheme.typography.titleMedium)
+                        TextButton(
+                            onClick = { totalMinutes = 0 },
+                            modifier = Modifier.testTag("clear_duration"),
+                        ) {
+                            Text("清零")
+                        }
+                    }
                     Text(
                         text = formatStepperDuration(totalMinutes),
                         style = MaterialTheme.typography.headlineLarge,
@@ -118,39 +122,6 @@ internal fun CompTimeDayEditorSheet(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        TextButton(
-                            onClick = { totalMinutes = 0 },
-                            modifier = Modifier.testTag("clear_duration"),
-                        ) {
-                            Text("清零")
-                        }
-                    }
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        if (effectiveDayType == DayType.WORKDAY) {
-                            NegativeDurationPresetsMinutes.forEach { presetMinutes ->
-                                PresetDurationChip(
-                                    label = formatStepperDuration(presetMinutes),
-                                    selected = totalMinutes == presetMinutes,
-                                    tag = "preset_${presetMinutes}",
-                                ) {
-                                    totalMinutes = presetMinutes
-                                }
-                            }
-                        }
-                        PositiveDurationPresetsMinutes.forEach { presetMinutes ->
-                            PresetDurationChip(
-                                label = formatStepperDuration(presetMinutes),
-                                selected = totalMinutes == presetMinutes,
-                                tag = "preset_${presetMinutes}",
-                            ) {
-                                totalMinutes = presetMinutes
-                            }
-                        }
-                    }
                 }
             }
             Surface(
@@ -222,63 +193,6 @@ internal fun CompTimeDayEditorSheet(
 
 @Composable
 private fun OverrideChip(label: String, selected: Boolean, tag: String, onClick: () -> Unit) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        modifier = Modifier.testTag(tag),
-        label = { Text(label) },
-    )
-}
-
-@Composable
-private fun DurationStepperButton(label: String, enabled: Boolean, tag: String, onStep: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        tonalElevation = 1.dp,
-        modifier = Modifier
-            .width(60.dp)
-            .height(56.dp)
-            .testTag(tag)
-            .pointerInput(enabled) {
-                detectTapGestures(
-                    onPress = {
-                        if (!enabled) {
-                            return@detectTapGestures
-                        }
-                        onStep()
-                        val releasedEarly = withTimeoutOrNull(350L) { tryAwaitRelease() }
-                        if (releasedEarly == null) {
-                            while (true) {
-                                onStep()
-                                val releasedDuringRepeat = withTimeoutOrNull(90L) { tryAwaitRelease() }
-                                if (releasedDuringRepeat != null) {
-                                    break
-                                }
-                            }
-                        }
-                    },
-                )
-            },
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.headlineMedium,
-                color = if (enabled) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                },
-            )
-        }
-    }
-}
-
-@Composable
-private fun PresetDurationChip(label: String, selected: Boolean, tag: String, onClick: () -> Unit) {
     FilterChip(
         selected = selected,
         onClick = onClick,
