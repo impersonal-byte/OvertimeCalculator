@@ -92,12 +92,15 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-Phase 3 backup/restore complete. All 3 plans executed:
-- 03-01: Manual backup feature
-- 03-02: Manual restore with clear-and-replace semantics  
+Phase 3 backup/restore in progress. 3 of 4 plans executed:
+- 03-01: Manual backup feature (snapshot contract)
+- 03-02: Manual restore with clear-and-replace semantics
 - 03-03: Platform backup alignment
 
-Ready for next roadmap decision.
+Remaining:
+- 03-04: Ship data-management backup/restore UI and flow tests
+
+Ready for 03-04 execution.
 
 ---
 *Phase: 03-data-backup-and-restore*
