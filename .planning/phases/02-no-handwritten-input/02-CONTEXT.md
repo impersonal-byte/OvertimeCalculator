@@ -20,8 +20,8 @@ Replace handwritten-style or manual freeform day-entry expectations with a struc
 - The centered slider is intended to replace the current primary duration stepper interaction in the day editor.
 
 ### Quick entry
-- Keep fast, non-text alternatives alongside the slider rather than forcing typed entry.
-- Preserve quick actions such as presets and reset/clear behavior so common durations stay one tap away.
+- Keep the day-entry interaction slider-first rather than splitting attention across multiple quick-entry surfaces.
+- Preserve reset/clear behavior, but remove preset chips from the day editor so the centered slider is the sole duration control.
 - Optimize the day-entry flow for quick repeated use from the calendar, not for long-form editing.
 
 ### Input density
@@ -41,7 +41,7 @@ Replace handwritten-style or manual freeform day-entry expectations with a struc
 
 ### Claude's Discretion
 - Exact centered-slider visual design, labels, and tick-mark treatment.
-- Snapping interval, haptic behavior, and whether presets stay always visible or collapse on small screens.
+- Snapping interval and haptic behavior.
 - Exact helper text wording and whether the current clear action remains a button or becomes a slider reset affordance.
 
 </decisions>
@@ -52,6 +52,7 @@ Replace handwritten-style or manual freeform day-entry expectations with a struc
 - "使用 Centered sliders，向左表示负，向右表示正数。"
 - The user explicitly questioned whether this can completely replace the current interaction; the chosen default is to apply full replacement only to daily duration entry, not to all settings forms.
 - The user explicitly raised crowding concerns about stop indicators on mobile; the chosen default is sparse major ticks only, not one marker per step.
+- After manual testing, the user chose to remove preset chips entirely because they conflict with the slider interaction.
 
 </specifics>
 
@@ -60,7 +61,6 @@ Replace handwritten-style or manual freeform day-entry expectations with a struc
 
 ### Reusable Assets
 - `app/src/main/java/com/peter/overtimecalculator/ui/DayEditorSheet.kt`: current day-entry sheet, existing integration point for replacing the primary duration control.
-- `DurationStepperButton` and `PresetDurationChip` in `app/src/main/java/com/peter/overtimecalculator/ui/DayEditorSheet.kt`: reusable quick-entry patterns to keep around the new slider.
 - `app/src/main/java/com/peter/overtimecalculator/ui/OvertimeViewModel.kt`: already supports signed-minute saving through `saveOvertimeMinutes`, so the control can emit total minutes directly.
 - `app/src/androidTest/java/com/peter/overtimecalculator/MainFlowTest.kt`: existing flow tests around day entry and settings provide a baseline for updating behavior verification.
 

@@ -42,8 +42,8 @@ created: 2026-03-15
 | 02-01-02 | 01 | 1 | CenteredDurationSlider composable | unit | `./gradlew :app:testDebugUnitTest --tests "CenteredDurationSliderTest"` | ✅ W0 | ⬜ pending |
 | 02-01-03 | 01 | 1 | Accessibility semantics | unit | Code review | N/A | ⬜ pending |
 | 02-02-01 | 02 | 2 | Replace stepper with slider | integration | `./gradlew :app:assembleDebug` | ✅ | ⬜ pending |
-| 02-02-02 | 02 | 2 | Non-workday clamping | integration | Code review | ✅ | ⬜ pending |
-| 02-02-03 | 02 | 2 | DayEditorSliderTest | androidTest | `./gradlew :app:connectedDebugAndroidTest --tests "DayEditorSliderTest"` | ✅ | ⬜ pending |
+| 02-02-02 | 02 | 2 | Preset chips removed from day editor | integration | Code review | ✅ | ⬜ pending |
+| 02-02-03 | 02 | 2 | DayEditorSliderTest | androidTest | `./gradlew :app:connectedDebugAndroidTest` | ✅ | ⬜ pending |
 | 02-02-04 | 02 | 2 | Human verify | checkpoint | Manual | N/A | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*

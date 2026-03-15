@@ -12,7 +12,7 @@ Phase 2 requires replacing the current stepper-based day editor (`DurationSteppe
 2. **Domain constants already centralized** - `OvertimeEntryValidator` in domain layer defines `MAX_OVERTIME_MINUTES` (960) and `MIN_COMP_MINUTES` (-480), but `DayEditorSheet.kt` duplicates these values
 3. **Step/snapping via `steps` parameter** - 30-minute increments = 48 discrete values (from -480 to 960 = 1440 range / 30 step = 48 steps)
 4. **Accessibility built-in** - Material 3 Slider provides TalkBack support; custom semantics needed for value announcements
-5. **Existing test coverage** - `MainFlowTest.kt` already tests day editor via `preset_120` clicks; slider would need new test tags
+5. **Existing test coverage** - `MainFlowTest.kt` covers the day editor flow, but slider-specific assertions need to replace old preset-chip interactions
 
 **Primary recommendation:** Build centered slider using Compose `Slider` with `valueRange = -480f..960f`, `steps = 47`, and custom track drawing for center indicator. Reuse domain constants from `OvertimeEntryValidator` and add test tags for slider thumb and value display.
 
@@ -27,8 +27,8 @@ Phase 2 requires replacing the current stepper-based day editor (`DurationSteppe
 - Use a centered slider as the primary daily duration control
 - Slider maps negative values to the left (comp time) and positive to the right (overtime)
 - The centered slider replaces the current primary duration stepper interaction in the day editor
-- Keep fast, non-text alternatives alongside the slider (presets, reset/clear)
-- Preserve quick actions such as presets and reset/clear behavior
+- Keep the day editor focused on the centered slider plus clear/reset behavior
+- Do not keep preset chips alongside the slider in the day editor
 - Daily overtime entry should be low-friction and highly structured
 - Prefer a single focused editor surface over multiple manual numeric fields
 - Keep exact numeric text fields for settings flows (hourly rate, reverse pay, multipliers)
@@ -37,7 +37,7 @@ Phase 2 requires replacing the current stepper-based day editor (`DurationSteppe
 
 ### Claude's Discretion
 - Exact centered-slider visual design, labels, and tick-mark treatment
-- Snapping interval, haptic behavior, and whether presets stay always visible or collapse on small screens
+- Snapping interval and haptic behavior
 - Exact helper text wording and whether the current clear action remains a button or becomes a slider reset affordance
 
 ### Deferred Ideas (OUT OF SCOPE)
@@ -142,15 +142,14 @@ ModalBottomSheet(onDismissRequest = onDismiss) {
             value = totalMinutes.toFloat(),
             onValueChange = { totalMinutes = it.toInt() },
         )
-        // Presets and clear button remain
-        FlowRow(...) { /* PresetDurationChip */ }
+        // Clear button remains, preset chips removed
+        TextButton(...) { /* clear */ }
     }
 }
 ```
 
 ### Anti-Patterns to Avoid
 - **Defining domain constants in UI layer:** Already happening in DayEditorSheet.kt - should use OvertimeEntryValidator constants
-- **Removing preset chips:** Context explicitly says "keep fast, non-text alternatives alongside slider"
 - **Changing save path:** OvertimeViewModel.saveOvertimeMinutes already works; slider should emit to same path
 
 ---
@@ -180,7 +179,7 @@ ModalBottomSheet(onDismissRequest = onDismiss) {
 **What goes wrong:** Slider doesn't snap to expected values (e.g., 30, 60, 90)
 **Why it happens:** Steps parameter is "gaps between values", not "number of values" - formula is `(range / step) - 1`
 **How to avoid:** For -480 to 960 range with 30-min steps: (1440/30) - 1 = 47 steps
-**Warning signs:** Preset chips don't match slider positions
+**Warning signs:** Slider positions or saved values drift from 30-minute snapping expectations
 
 ### Pitfall 3: Non-Workday Negative Values
 **What goes wrong:** Slider allows negative values on rest days/holidays
@@ -280,15 +279,15 @@ val MinCompMinutes = OvertimeEntryValidator.MIN_COMP_MINUTES
    - What's unclear: Should haptics fire on every step crossing, or only on release?
    - Recommendation: Fire on step change during drag for immediate feedback
 
-3. **Preset chips visibility**
-   - What we know: Current implementation shows all presets in FlowRow
-   - What's unclear: Should presets collapse on smaller screens?
-   - Recommendation: Keep always visible per CONTEXT.md "presets stay always visible"
+3. **Slider-only interaction density**
+   - What we know: Preset chips were removed after manual testing because they conflicted with the slider
+   - What's unclear: Whether helper copy alone is enough guidance for first-time users
+   - Recommendation: Keep the slider-only layout and rely on sparse major ticks plus clear/reset affordance
 
 4. **Test tag migration**
-   - What we know: Existing tests use `duration_stepper`, `editor_duration_value`, `preset_120`
-   - What's unclear: Should old tags be kept for backward compatibility or replaced?
-   - Recommendation: Add new slider tags (`duration_slider`, `slider_thumb`) alongside existing for gradual migration
+   - What we know: Existing tests used `duration_stepper`, `editor_duration_value`, and `preset_120`
+   - What's unclear: Which old tags are still worth preserving after the preset removal
+   - Recommendation: Keep `editor_duration_value`, add `duration_slider`, and remove preset tag dependencies from tests
 
 ---
 
@@ -312,7 +311,7 @@ val MinCompMinutes = OvertimeEntryValidator.MIN_COMP_MINUTES
 | SLIDER-03 | Slider value displays formatted (e.g., "2.0h") | Unit | `onNodeWithTag("editor_duration_value").assertTextContains("2.0h")` | ✅ Exists |
 | SLIDER-04 | Negative values show comp-time context | Unit | N/A - visual | ❌ Need new |
 | SLIDER-05 | Non-workdays clamp to 0 minimum | Unit | Save and verify | ❌ Need new |
-| SLIDER-06 | Presets still work alongside slider | Integration | `onNodeWithTag("preset_120").performClick()` | ✅ Exists |
+| SLIDER-06 | Preset chips are absent from the day editor | Integration | `onAllNodesWithTag("preset_120").assertCountEquals(0)` | ✅ Exists |
 | SLIDER-07 | Save via slider value works | Integration | Full flow test | ✅ Exists (MainFlowTest) |
 
 ### Sampling Rate
