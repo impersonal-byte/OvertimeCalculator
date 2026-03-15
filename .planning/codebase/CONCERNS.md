@@ -1,46 +1,95 @@
-# Concerns
+# Codebase Concerns
 
-## 1. Sensitive Signing Material Appears In The Repo
-- Repo root files `OvertimeCalculator.jks` and `OvertimeCalculator.jks.base64.txt` look like release-signing artifacts.
-- `.github/workflows/release.yml` expects signing secrets to be provided securely at runtime, so checked-in signing material is a major operational and security concern.
-- Even if these files are no longer active, their presence increases accidental exposure risk and makes repository hygiene harder.
+**Analysis Date:** 2026-03-15
 
-## 2. UI Coordination Is Highly Centralized
-- `app/src/main/java/com/peter/overtimecalculator/ui/Screens.kt` is very large and combines navigation, home UI, editor behavior, event collection, CSV share flow, and presentation logic.
-- This makes seemingly small UI changes more likely to create merge conflicts or regress adjacent behavior.
-- The file is also harder to test in focused units than smaller screen-specific components.
+## Intentional Tradeoffs To Keep In Mind
 
-## 3. Manual Dependency Wiring Does Not Scale Gracefully
-- `app/src/main/java/com/peter/overtimecalculator/data/AppContainer.kt` is clean for the current size, but every new dependency threads through manual construction.
-- `MainActivity.kt`, `OvertimeViewModel.kt`, and `AppUpdateViewModel.kt` also carry factory boilerplate because there is no DI framework.
-- This is not broken today, but it increases friction as features and test seams grow.
+**Single module and manual DI are deliberate for now:**
+- `README.md` states the app remains a single `:app` module and keeps a handwritten `AppContainer`
+- Relevant files: `README.md`, `app/src/main/java/com/peter/overtimecalculator/data/AppContainer.kt`
+- Concern: future features must work with manual wiring and a growing composition root unless the project intentionally revisits that decision
 
-## 4. Networking And Install Paths Are Hand-Rolled
-- `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateManager.kt` uses raw `HttpURLConnection`, manual JSON parsing, `DownloadManager`, and install-permission routing.
-- `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidayRulesRepository.kt` also performs raw HTTP calls.
-- These are legitimate choices for a small app, but they concentrate failure handling, retry behavior, and API drift risk in custom code.
+**SharedPreferences still carries state that docs already want to contain:**
+- Appearance settings remain in `app/src/main/java/com/peter/overtimecalculator/data/AppearancePreferencesRepository.kt`
+- Update session state remains in `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateSessionStore.kt`
+- `docs/storage-boundaries.md` explicitly says new preference-style growth should prefer DataStore and that SharedPreferences should not keep expanding
 
-## 5. Persistence Strategy Is Split Across Three Mechanisms
-- Room is used for main business data in `app/src/main/java/com/peter/overtimecalculator/data/db/`.
-- DataStore is used for holiday cache metadata in `HolidayRulesRepository.kt`.
-- `SharedPreferences` is still used in `OvertimeViewModel.kt` and `UpdateManager.kt`.
-- The split is understandable, but future changes need clear rules to avoid accidental duplication or partial migrations.
+## Operational Risks
 
-## 6. Database Migration Visibility Is Limited
-- `app/src/main/java/com/peter/overtimecalculator/data/db/AppDatabase.kt` sets `exportSchema = false`.
-- That reduces schema-history visibility and makes future migration review or debugging harder than it needs to be.
-- The project already has at least one explicit migration, so schema tracking matters.
+**Holiday remote refresh failures are not surfaced to the user interface:**
+- `OvertimeApplication.kt` triggers `refreshIfStale()` at startup and ignores `HolidayRefreshResult.Failed`
+- `HolidayRulesRepository.kt` catches remote fetch problems and returns `Failed(retryable = true)`
+- `HolidaySyncWorker.kt` retries or fails background work, but there is no matching UI notification path
+- Impact: the app can silently fall back to stale/baseline holiday data without an in-app explanation
 
-## 7. CI Does Not Cover Instrumentation Flows
-- `.github/workflows/ci.yml` only runs unit tests and a debug build.
-- `.github/workflows/release.yml` also stops at unit tests before packaging.
-- `app/src/androidTest/java/com/peter/overtimecalculator/MainFlowTest.kt` covers important navigation and settings flows, but those checks are not part of automated remote verification.
+**Holiday rules depend on a third-party public API:**
+- Remote source: `https://api.haoshenqi.top/holiday?date=%d`
+- Files: `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidayRulesRepository.kt`, `app/src/main/java/com/peter/overtimecalculator/data/holiday/HolidayRemoteClient.kt`
+- Mitigation already present: bundled baseline asset at `app/src/main/assets/holidays/cn_mainland.json`
+- Concern: format or availability changes in the remote API can still affect freshness of rule updates
 
-## 8. Repo Hygiene Looks Mixed
-- Repo root includes build outputs and logs such as `build.log`, `build2.log`, `manifest_error.log`, `manifest_utf8.log`, and `hs_err_pid*.log`.
-- The checked-in `android-sdk/` directory also suggests local tooling may be living inside the repo.
-- None of this breaks the app directly, but it increases noise and can make source-of-truth boundaries less clear.
+**In-app update flow depends on several Android/platform boundaries at once:**
+- Release check: `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateReleaseChecker.kt`
+- Download/install orchestration: `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateManager.kt`, `UpdateDownloadGateway.kt`, `UpdateInstallGateway.kt`
+- Manifest permissions/hooks: `app/src/main/AndroidManifest.xml`, `app/src/main/res/xml/file_paths.xml`
+- Concern: this feature crosses GitHub API, DownloadManager, FileProvider, and install-permission state, so regressions can span multiple layers
 
-## 9. Documentation And Runtime Need To Stay In Sync
-- `README.md` is generally strong, but operational details like signing, update flow, storage split, and test coverage can drift as the app evolves.
-- The new `.planning/codebase/*.md` docs should be refreshed after changes to build, release, storage, or navigation structure.
+## Maintainability / Scaling Pressure
+
+**Month observation recalculates from broad upstream flows:**
+- `app/src/main/java/com/peter/overtimecalculator/data/repository/OvertimeRepository.kt:39` combines all configs, current-range entries, current-range overrides, and holiday rules
+- Concern: any upstream change forces month recomputation, which is simple now but becomes more expensive as history and feature surface grow
+
+**Config resolution scans the full config history:**
+- `app/src/main/java/com/peter/overtimecalculator/data/repository/OvertimeRepository.kt:174` sorts and searches all configs to resolve the active month
+- `ensureMaterializedConfig()` also fetches all configs inside transactions
+- Concern: this is acceptable for small local history, but it is not optimized for long-running datasets
+
+**Release hardening is currently lightweight:**
+- `app/build.gradle.kts` sets `isMinifyEnabled = false` for release
+- `app/proguard-rules.pro` is effectively empty
+- Concern: release APKs currently skip shrinking/obfuscation and do not yet use hardened keep-rule tuning
+
+**Update session store is instantiated repeatedly:**
+- `AndroidUpdateManager` creates separate `SharedPreferencesUpdateSessionStore.create(...)` instances for its own field, the download gateway, and the install gateway
+- File: `app/src/main/java/com/peter/overtimecalculator/data/update/UpdateManager.kt`
+- Concern: all instances point at the same prefs file, so behavior is consistent today, but the wiring is easy to drift or duplicate further
+
+## Testing Gaps Seen During Mapping
+
+**No direct tests were found for several high-leverage classes:**
+- Search found no direct test references for `OvertimeRepository`, `OvertimeViewModel`, or `Migration1To2`
+- Evidence: repository-wide grep over `app/src/test/**/*.kt`
+- `ConfigPropagationPlanner` is directly exercised in `app/src/test/java/com/peter/overtimecalculator/DomainLogicTest.kt`
+- Concern: write-path, state-transition, and migration behavior are important enough that indirect coverage may be thin
+
+**Core screens are exercised more by flow tests than by screen-focused test files:**
+- Existing Android tests include `MainSmokeTest.kt`, `MainFlowTest.kt`, and `DayEditorSliderTest.kt`
+- No direct Android test matches were found for `HomeScreen`, `DayEditorSheet`, `ThemeSettingsScreen`, or `SettingsMainScreen`
+- Concern: full-flow tests cover important paths, but isolated screen regressions may still slip through
+
+## Storage Boundary Risks Already Documented In Repo Docs
+
+**Backup and migration behavior spans multiple storage systems:**
+- `docs/storage-boundaries.md` notes that Room, DataStore, SharedPreferences, and files may all participate in backup/device transfer
+- Manifest backup config is enabled in `app/src/main/AndroidManifest.xml`
+- Concern: future storage migrations must consider restore/duplicate-state behavior, not only local reads and writes
+
+**SharedPreferences migration work is still pending:**
+- `docs/storage-boundaries.md` explicitly recommends a future migration of appearance preferences to a dedicated DataStore repository
+- Concern: new preference-related work should avoid deepening the current legacy boundary
+
+**Release metadata in docs is currently out of sync with app build config:**
+- `README.md` still shows release metadata for `v2.0.0` / version code `13`
+- `app/build.gradle.kts` currently defines `appVersionName = "2.1.0"` and `appVersionCode = 14`
+- Concern: readers cross-checking planning docs against repo docs may see a version mismatch until the next release sync updates `README.md`
+
+## Safe Areas To Treat As Baseline
+
+**Not a confirmed bug list:**
+- This document only records grounded risks and tradeoffs seen during mapping
+- It intentionally avoids claiming crashes or broken behavior unless a concrete failing path was verified in source or tests
+
+---
+
+*Concerns audit: 2026-03-15*
