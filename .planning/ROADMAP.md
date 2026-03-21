@@ -15,8 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 1: Planning Baseline** - Initialize GSD project memory and quick-task support for the existing app
 - [x] **Phase 2: No handwritten input** - Define a non-handwritten, structured day-entry interaction for overtime and comp time
 - [x] **Phase 3: Data backup and restore** - Close the export-only data gap with app-controlled full-fidelity backup and restore (completed 2026-03-15)
-- [x] **Phase 4: Animeko visual migration** - Reference the in-repo `animeko` implementation and migrate its interface and color language into this app, replacing prior custom UI styling (completed 2026-03-21)
-- [x] **Phase 4.1: 亮色卡片层次修复 (INSERTED)** - Urgent fix for light-theme card contrast and visual hierarchy after 04 rollout (completed 2026-03-21)
+- [x] **Phase 4: Animeko visual migration** - Reference the in-repo `animeko` implementation and migrate its interface and color language into this app, replacing prior custom UI styling, including merged real-device light-theme hierarchy follow-up after rollout (completed 2026-03-21)
 
 ## Phase Details
 
@@ -36,15 +35,14 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 4.1
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Planning Baseline | 0/1 | Not started | - |
 | 2. No handwritten input | 2/2 | Complete | 2026-03-15 |
 | 3. Data backup and restore | 4/4 | Complete    | 2026-03-15 |
-| 4. Animeko visual migration | 5/5 | Complete | 2026-03-21 |
-| 4.1. 亮色卡片层次修复 (INSERTED) | 3/3 | Complete | 2026-03-21 |
+| 4. Animeko visual migration | 6/6 | Complete | 2026-03-21 |
 
 ### Phase 2: No handwritten input
 
@@ -86,12 +84,13 @@ Plans:
 **Goal:** Learn how interface and color systems are implemented in the repository's `animeko` folder, then migrate that visual language into this app and replace the previous custom styling.
 **Requirements**: [Context-driven - animeko-inspired UI language, theme/token parity strategy, replace old styling paths]
 **Depends on:** Phase 3
-**Plans:** 5/5 plans complete
+**Plans:** 6/6 plans complete
 
 **Success Criteria** (what must be TRUE):
   1. The app has a documented migration direction for applying Animeko-inspired color/theme behavior to this project's Compose theme system.
   2. Existing visual surfaces that currently define the app's look-and-feel (theme settings, shell-level containers, core cards) have a clear replacement path instead of incremental one-off styling.
   3. Context decisions make downstream planning unambiguous about what is being replaced versus reused.
+  4. Real-device light-theme validation confirms that card hierarchy remains readable after rollout, without dark-theme regressions or border-only patching.
 
 Plans:
 - [x] 04-01: Capture phase context and implementation decisions for Animeko visual migration
@@ -99,23 +98,6 @@ Plans:
 - [x] 04-03: Migrate shell and home surfaces to semantic wrapper styling
 - [x] 04-04: Migrate day editor and theme settings surfaces without behavior changes
 - [x] 04-05: Complete remaining settings migration and remove legacy style paths
-
-### Phase 04.1: 修复亮色主题卡片层次与对比度不足 (INSERTED)
-
-**Goal:** 修复亮色主题下卡片边界与层次不明显的问题，确保核心卡片在浅色模式可见、可读、可辨识，同时不破坏暗色主题表现。
-**Requirements**: [Context-driven - light-theme hierarchy/contrast fix, no behavior changes]
-**Depends on:** Phase 4
-**Plans:** 3/3 plans complete
-
-**Success Criteria** (what must be TRUE):
-  1. 亮色主题下首页与设置页关键卡片容器可清晰区分（边界、层次、分组关系明确）。
-  2. 文本与卡片背景对比度提升，弱化文本仍可读，且不造成暗色主题回归。
-  3. 仅调整视觉 token/层级，不改变业务交互语义与数据逻辑。
-  4. 动态色开关在亮色模式下仍保持一致行为，不出现“卡片消失感”。
-
-Plans:
-- [x] 04.1-01: 调整亮色语义层级与关键卡片边界，修复卡片可见性
-- [x] 04.1-02: 用语义分层色卡替换边框补丁，按真机反馈修复亮色层次
-- [x] 04.1-03: Strengthen light-theme tonal layers for core cards and add luminance guardrails
+- [x] 04-06: Merge post-device light-theme hierarchy follow-up back into Phase 04 and close with guardrail notes
 
 

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-stopped_at: Completed Phase 4.1 after real-device validation
-last_updated: "2026-03-21T10:28:03.842Z"
-last_activity: 2026-03-21 - Phase 4.1 marked complete after real-device validation
+status: complete
+stopped_at: Folded former Phase 4.1 follow-up into Phase 04 planning docs
+last_updated: "2026-03-21T13:15:00.000Z"
+last_activity: 2026-03-21 - Merged real-device light-theme follow-up back into Phase 04 docs
 progress:
-  total_phases: 5
+  total_phases: 4
   completed_phases: 4
-  total_plans: 14
-  completed_plans: 14
+  total_plans: 12
+  completed_plans: 12
 ---
 
 # Project State
@@ -20,21 +20,21 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-03-14)
 
 **Core value:** 用户可以稳定记录每天的加班或调休，并即时得到可信的当月加班工资结果。
-**Current focus:** Phase 4.1 complete; waiting for next phase selection
+**Current focus:** Phase 04 consolidated with post-device follow-up; waiting for next phase selection
 
 ## Current Position
 
-Phase: 4.1 of 5 (Light-theme hierarchy fix, INSERTED)
-Plan: 3 of 3 in current phase
+Phase: 4 of 4 (Animeko visual migration)
+Plan: 6 of 6 in current phase
 Status: Complete
-Last activity: 2026-03-21 - Phase 4.1 marked complete after real-device validation
+Last activity: 2026-03-21 - Merged real-device light-theme follow-up back into Phase 04 docs
 
 Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
+- Total plans completed: 12
 - Average duration: ~15 min
 - Total execution time: ~1 hour
 
@@ -45,8 +45,7 @@ Progress: [██████████] 100%
 | 1 | 0 | - | - |
 | 2 | 2 | multi-session | multi-session |
 | 3 | 4 | multi-session | multi-session |
-| 4 | 5 | mixed | mixed |
-| 4.1 | 3 | iterative | iterative |
+| 4 | 6 | mixed + real-device follow-up | mixed |
 
 **Recent Trend:**
 - Last 5 plans: -
@@ -87,11 +86,11 @@ None yet.
 - Phase 4 Wave 2 completed: 04-03 shell/home migration with build + unit-test gate pass
 - Phase 4 Wave 3 completed: 04-04 day editor/theme settings migration with build + unit-test gate pass
 - Phase 4 Wave 4 completed: 04-05 remaining settings migration and legacy style cleanup with build + unit-test gate pass
-- Phase 4.1 inserted after Phase 4: 修复亮色主题卡片层次与对比度不足 (URGENT)
-- Phase 4.1 plan executed: light-mode token hierarchy tuning + card border reinforcement, pending real-device validation
-- Phase 4.1 re-planned and executed: replaced border patch with tonal layered cards per device feedback
-- Phase 4.1 iteration 3 executed: reinforced light-theme tonal hierarchy and card elevation guardrails
-- Phase 4.1 completed: real-device validation passed and phase marked complete (2026-03-21)
+- Phase 4 post-device follow-up recorded: light-theme hierarchy issues discovered during real-device validation
+- Phase 4 follow-up iteration 1 executed: initial light-mode hierarchy tuning and card visibility reinforcement
+- Phase 4 follow-up iteration 2 executed: replaced border patch with tonal layered cards per device feedback
+- Phase 4 follow-up iteration 3 executed: reinforced light-theme tonal hierarchy and luminance guardrails
+- Phase 4 consolidated: former 4.1 follow-up merged back into the main Phase 04 reading path (2026-03-21)
 
 ### Blockers/Concerns
 
@@ -105,8 +104,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T10:28:03.842Z
-Stopped at: Completed Phase 4.1 after real-device validation
-Resume file: .planning/phases/04.1-/04.1-03-SUMMARY.md
+Last session: 2026-03-21T13:15:00.000Z
+Stopped at: Folded former Phase 4.1 follow-up into Phase 04 planning docs
+Resume file: .planning/phases/04-animeko-visual-migration/04-06-SUMMARY.md
 
 
