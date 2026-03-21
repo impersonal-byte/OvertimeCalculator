@@ -184,15 +184,15 @@ private fun ThemeModeThumbnail(
                 background = paletteSpec.lightColorScheme.surface,
                 panel = paletteSpec.lightColorScheme.background,
                 accent = paletteSpec.lightPreviewAccent,
-                lineColor = Color(0xFFD8E0F3),
-                outline = Color(0xFFE6E7EF),
+                lineColor = paletteSpec.lightPreviewLine,
+                outline = paletteSpec.lightPreviewOutline,
             )
             AppTheme.DARK -> drawThemePreviewLayer(
                 background = paletteSpec.darkColorScheme.surface,
-                panel = Color(0xFF0D1324),
+                panel = paletteSpec.darkPreviewPanel,
                 accent = paletteSpec.darkPreviewAccent,
-                lineColor = Color(0xFF3E4C6D),
-                outline = Color(0xFF2E3445),
+                lineColor = paletteSpec.darkPreviewLine,
+                outline = paletteSpec.darkPreviewOutline,
             )
             AppTheme.SYSTEM -> drawSystemPreview(paletteSpec)
         }
@@ -217,17 +217,17 @@ private fun DrawScope.drawSystemPreview(paletteSpec: ThemePaletteSpec) {
             background = paletteSpec.lightColorScheme.surface,
             panel = paletteSpec.lightColorScheme.background,
             accent = paletteSpec.lightPreviewAccent,
-            lineColor = Color(0xFFD8E0F3),
-            outline = Color(0xFFE6E7EF),
+            lineColor = paletteSpec.lightPreviewLine,
+            outline = paletteSpec.lightPreviewOutline,
         )
     }
     clipPath(darkPath) {
         drawThemePreviewLayer(
             background = paletteSpec.darkColorScheme.surface,
-            panel = Color(0xFF0D1324),
+            panel = paletteSpec.darkPreviewPanel,
             accent = paletteSpec.darkPreviewAccent,
-            lineColor = Color(0xFF3E4C6D),
-            outline = Color(0xFF2E3445),
+            lineColor = paletteSpec.darkPreviewLine,
+            outline = paletteSpec.darkPreviewOutline,
         )
     }
     drawLine(

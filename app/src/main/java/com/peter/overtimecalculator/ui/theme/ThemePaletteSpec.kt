@@ -17,6 +17,11 @@ data class ThemePaletteSpec(
     val swatchColors: List<Color>,
     val lightPreviewAccent: Color,
     val darkPreviewAccent: Color,
+    val lightPreviewLine: Color,
+    val lightPreviewOutline: Color,
+    val darkPreviewPanel: Color,
+    val darkPreviewLine: Color,
+    val darkPreviewOutline: Color,
 )
 
 private data class ThemeSeedDefinition(
@@ -93,6 +98,11 @@ private fun generatePalette(definition: ThemeSeedDefinition): ThemePaletteSpec {
         ),
         lightPreviewAccent = lightSecondary,
         darkPreviewAccent = darkPrimary,
+        lightPreviewLine = Color(0xFFD8E0F3),
+        lightPreviewOutline = Color(0xFFE6E7EF),
+        darkPreviewPanel = Color(0xFF0D1324),
+        darkPreviewLine = Color(0xFF3E4C6D),
+        darkPreviewOutline = Color(0xFF2E3445),
     )
 }
 
