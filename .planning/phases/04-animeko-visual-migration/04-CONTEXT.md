@@ -45,6 +45,12 @@ Reference the in-repo `animeko` implementation to migrate its UI language and co
 - Settings rollout: fully replace theme-related settings surfaces first, then expand to rules/preferences/data/about.
 - Completion standard for each batch: zero legacy-style paths remain within batch target surfaces.
 
+### Post-device follow-up integrated into Phase 04
+- Real-device light-theme validation exposed insufficient card hierarchy after the initial 04 rollout, especially on Summary, Month Switcher, and Settings cards.
+- Follow-up resolution is merged into this phase instead of tracked as a separate reading path: tune light-mode semantic tiers first, then prefer tonal card separation over border patches.
+- Dark-mode appearance must remain stable while light-mode hierarchy is strengthened.
+- Real-device validation is the acceptance source for these hierarchy refinements; build and unit-test gates remain required but are not sufficient alone.
+
 ### Claude's Discretion
 - Exact HCT parameterization details (hue/chroma/tone generation rules) as long as semantic parity decisions are honored.
 - Exact gradient stop values, alphas, and per-surface tuning.
@@ -94,8 +100,20 @@ Reference the in-repo `animeko` implementation to migrate its UI language and co
 - "完美迁移" is defined as semantic and visual hierarchy parity, not direct source-level replication.
 - Dynamic color should remain user-controlled and opt-in; baseline visual identity should remain deterministic.
 - Migration should feel complete within each batch: no visible mix of old/new style in a finished batch scope.
+- Post-device refinement belongs to the same migration story when it only corrects visual hierarchy and does not change interaction semantics.
 
 </specifics>
+
+<review_followups>
+## Residual Cleanup Notes
+
+- `app/src/main/java/com/peter/overtimecalculator/ui/settings/ThemeModeSections.kt` still uses local hardcoded preview colors for theme thumbnails; this is the clearest remaining direct-color residue.
+- `app/src/main/java/com/peter/overtimecalculator/ui/theme/Color.kt` appears to be an unreferenced legacy palette file and should be reviewed for archival or deletion.
+- `app/src/main/res/values/themes.xml` still inherits from `Theme.MaterialComponents.DayNight.NoActionBar`; review whether this XML base should remain as-is or be aligned more explicitly with the Compose Material 3 shell.
+- `ThemeDefaults` is intentionally broad, but some screens still rely on local blends/alpha/gradient math because dedicated semantic roles for preview lines, subtle text, and hero atmospheres do not yet exist.
+- These are non-blocking cleanup items, not reopen-phase blockers; capture them so later visual cleanup can be deliberate instead of ad hoc.
+
+</review_followups>
 
 <deferred>
 ## Deferred Ideas
@@ -110,3 +128,4 @@ Reference the in-repo `animeko` implementation to migrate its UI language and co
 
 *Phase: 04-animeko-visual-migration*
 *Context gathered: 2026-03-16*
+*Post-device follow-up merged: 2026-03-21*

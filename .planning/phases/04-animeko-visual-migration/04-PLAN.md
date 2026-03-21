@@ -147,6 +147,36 @@ Output: wave-by-wave execution blueprint with file targets, verification gates, 
 - Targeted phase surfaces have zero remaining legacy-style paths.
 - Theme behavior is consistent across supported theme mode and dynamic-color combinations.
 
+---
+
+## Wave 5 - Post-device light-theme hierarchy follow-up (Plan 04-06)
+
+**Goal:** Fold real-device light-theme hierarchy fixes back into the main migration so Phase 04 ends with readable tonal layering on actual devices, not only emulator/build validation.
+
+**Target files:**
+- `app/src/main/java/com/peter/overtimecalculator/ui/theme/ThemeDefaults.kt`
+- `app/src/main/java/com/peter/overtimecalculator/ui/HomeSummarySections.kt`
+- `app/src/main/java/com/peter/overtimecalculator/ui/settings/SettingsCommon.kt`
+- `app/src/main/java/com/peter/overtimecalculator/ui/settings/SettingsMainSections.kt`
+- `app/src/test/java/com/peter/overtimecalculator/ThemeDefaultsTest.kt`
+
+**Implementation tasks:**
+1. Increase light-mode tonal separation between navigation/section/card/elevated semantic layers.
+2. Replace temporary border-first fixes with semantic tonal hierarchy wherever possible.
+3. Preserve dark-mode behavior while improving light-mode card readability and grouping.
+4. Add guardrail assertions so future token changes cannot flatten light-theme layers.
+5. Close with real-device validation for home summary/month switcher/settings cards.
+
+**Verification gate:**
+- `./gradlew.bat :app:assembleDebug`
+- `./gradlew.bat :app:testDebugUnitTest`
+- Real-device light-theme check for home and settings hierarchy
+
+**Done criteria:**
+- Light-theme cards are visually layered on actual devices without relying on black-border patching.
+- Dark mode remains visually stable.
+- The follow-up reads as part of Phase 04 history rather than a separate migration track.
+
 </wave_plan>
 
 <acceptance>
@@ -154,6 +184,7 @@ Output: wave-by-wave execution blueprint with file targets, verification gates, 
 2. Shell, home, day editor, and theme settings surfaces are migrated to semantic wrappers/tokens.
 3. Phase-targeted surfaces satisfy batch-level zero-legacy-style completion.
 4. Migration preserves existing business behaviors and user-facing semantic flows.
+5. Real-device light-theme validation confirms card hierarchy is readable after the merged post-device follow-up.
 </acceptance>
 
 <risk_controls>
@@ -161,6 +192,7 @@ Output: wave-by-wave execution blueprint with file targets, verification gates, 
 - **Behavior regression:** Validate day editor interaction behavior and settings action semantics after each wave.
 - **Visual drift:** Apply centralized tokens only; reject one-off ad-hoc color usage during review.
 - **Rollout risk:** Ship by wave with build + tests passing at each gate.
+- **Device-only hierarchy gaps:** Use real-device light-theme review to catch flattened card layers that compile/test gates cannot see.
 </risk_controls>
 
 <output>
@@ -169,4 +201,5 @@ Create execution summaries after each wave:
 - `.planning/phases/04-animeko-visual-migration/04-03-SUMMARY.md`
 - `.planning/phases/04-animeko-visual-migration/04-04-SUMMARY.md`
 - `.planning/phases/04-animeko-visual-migration/04-05-SUMMARY.md`
+- `.planning/phases/04-animeko-visual-migration/04-06-SUMMARY.md`
 </output>
