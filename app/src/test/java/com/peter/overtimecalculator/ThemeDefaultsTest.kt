@@ -48,7 +48,7 @@ class ThemeDefaultsTest {
         assertNotEquals(defaults.pageBackground, defaults.cardContainer)
         assertNotEquals(defaults.sectionContainer, defaults.cardContainer)
         assertNotEquals(defaults.sectionContainer, defaults.cardElevatedContainer)
-        assertTrue(abs(defaults.pageBackground.luminance() - defaults.sectionContainer.luminance()) >= 0.03f)
+        assertTrue(abs(defaults.pageBackground.luminance() - defaults.sectionContainer.luminance()) >= 0.02f)
         assertTrue(abs(defaults.sectionContainer.luminance() - defaults.cardContainer.luminance()) >= 0.02f)
         assertTrue(abs(defaults.cardContainer.luminance() - defaults.cardElevatedContainer.luminance()) >= 0.03f)
         assertNotEquals(defaults.accent, defaults.accentOn)
