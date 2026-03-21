@@ -1,5 +1,6 @@
 package com.peter.overtimecalculator.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,9 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.peter.overtimecalculator.domain.DayCellUiState
-import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.HolidayCalendar
 import com.peter.overtimecalculator.domain.ZeroDecimal
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -24,6 +25,7 @@ internal fun HomeScreen(
     onNextMonth: () -> Unit,
     onDayClick: (LocalDate) -> Unit,
 ) {
+    val defaults = OvertimeTheme.defaults
     val displayedCells = remember(uiState.selectedMonth, uiState.dayCells) {
         if (uiState.dayCells.isEmpty()) {
             buildPlaceholderCells(uiState.selectedMonth)
@@ -35,6 +37,7 @@ internal fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(defaults.pageBackground)
             .testTag("home_screen")
             .padding(horizontal = 16.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),

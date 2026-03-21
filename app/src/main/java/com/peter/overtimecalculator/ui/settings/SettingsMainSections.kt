@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.peter.overtimecalculator.domain.AppTheme
 import com.peter.overtimecalculator.ui.AppUiState
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 import com.peter.overtimecalculator.ui.theme.ThemePaletteSpecs
 
 @Composable
@@ -61,9 +62,13 @@ internal fun CategoryNavigationCard(
     onClick: () -> Unit,
     testTag: String,
 ) {
+    val defaults = OvertimeTheme.defaults
+    val subtleTextColor = defaults.pageForeground.copy(alpha = 0.72f)
+
     Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(containerColor = defaults.cardElevatedContainer),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
@@ -78,7 +83,7 @@ internal fun CategoryNavigationCard(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = defaults.accent,
                 modifier = Modifier.size(28.dp),
             )
 
@@ -92,19 +97,19 @@ internal fun CategoryNavigationCard(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = defaults.pageForeground,
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = subtleTextColor,
                 )
             }
 
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = "进入详情",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = subtleTextColor,
             )
         }
     }

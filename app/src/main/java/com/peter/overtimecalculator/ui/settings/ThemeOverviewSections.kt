@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.peter.overtimecalculator.domain.AppTheme
 import com.peter.overtimecalculator.domain.SeedColor
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 import com.peter.overtimecalculator.ui.theme.ThemePaletteSpec
 import com.peter.overtimecalculator.ui.theme.ThemePaletteSpecs
 
@@ -35,9 +36,11 @@ internal fun ThemeOverviewCard(
     activePalette: ThemePaletteSpec,
     modifier: Modifier = Modifier,
 ) {
+    val defaults = OvertimeTheme.defaults
+    val subtleTextColor = defaults.pageForeground.copy(alpha = 0.72f)
     Surface(
         shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+        color = defaults.cardElevatedContainer,
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(
@@ -59,7 +62,7 @@ internal fun ThemeOverviewCard(
                 Text(
                     text = "把常用状态收在这里，方便快速确认当前模式。",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = subtleTextColor,
                 )
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -89,9 +92,11 @@ private fun ThemePaletteMiniPreview(
     paletteSpec: ThemePaletteSpec,
     modifier: Modifier = Modifier,
 ) {
+    val defaults = OvertimeTheme.defaults
     Surface(
         shape = RoundedCornerShape(24.dp),
         tonalElevation = 1.dp,
+        color = defaults.cardContainer,
         modifier = modifier.size(86.dp),
     ) {
         Canvas(modifier = Modifier.fillMaxSize().padding(10.dp)) {
@@ -135,15 +140,16 @@ private fun OverviewPill(
     text: String,
     testTag: String,
 ) {
+    val defaults = OvertimeTheme.defaults
     Surface(
         shape = RoundedCornerShape(999.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+        color = defaults.navigationContainer,
         modifier = Modifier.testTag(testTag),
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = defaults.pageForeground,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         )
     }
@@ -154,6 +160,7 @@ internal fun ThemeSectionHeader(
     title: String,
     body: String,
 ) {
+    val defaults = OvertimeTheme.defaults
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             text = title,
@@ -163,7 +170,7 @@ internal fun ThemeSectionHeader(
         Text(
             text = body,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = defaults.pageForeground.copy(alpha = 0.72f),
         )
     }
 }

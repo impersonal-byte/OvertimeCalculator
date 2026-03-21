@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.peter.overtimecalculator.domain.AppTheme
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 import com.peter.overtimecalculator.ui.theme.ThemePaletteSpec
 
 @Composable
@@ -94,15 +95,17 @@ private fun ThemeModePreviewCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val defaults = OvertimeTheme.defaults
+    val subtleTextColor = defaults.pageForeground.copy(alpha = 0.72f)
     val tag = "theme_mode_${option.testTagSuffix}"
     Card(
         shape = RoundedCornerShape(26.dp),
         border = BorderStroke(
             width = if (selected) 2.dp else 1.dp,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.24f),
+            color = if (selected) defaults.accent else defaults.outline.copy(alpha = 0.42f),
         ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (selected) 0.46f else 0.26f),
+            containerColor = defaults.sectionContainer.copy(alpha = if (selected) 0.92f else 0.72f),
         ),
         modifier = modifier
             .testTag(tag)
@@ -116,7 +119,7 @@ private fun ThemeModePreviewCard(
         ) {
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = if (selected) 0.92f else 0.68f),
+                color = defaults.cardContainer.copy(alpha = if (selected) 1f else 0.84f),
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(0.94f),
@@ -137,24 +140,24 @@ private fun ThemeModePreviewCard(
                 Text(
                     text = option.summary,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = subtleTextColor,
                 )
             }
             Surface(
                 shape = RoundedCornerShape(999.dp),
                 color = if (selected) {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                    defaults.accent.copy(alpha = 0.18f)
                 } else {
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                    defaults.navigationContainer
                 },
             ) {
                 Text(
                     text = if (selected) "当前使用" else "点击切换",
                     style = MaterialTheme.typography.labelMedium,
                     color = if (selected) {
-                        MaterialTheme.colorScheme.primary
+                        defaults.accent
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                        subtleTextColor
                     },
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                 )

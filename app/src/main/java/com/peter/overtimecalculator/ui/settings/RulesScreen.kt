@@ -22,6 +22,7 @@ import com.peter.overtimecalculator.domain.HourlyRateSource
 import com.peter.overtimecalculator.domain.ZeroDecimal
 import com.peter.overtimecalculator.domain.toDisplayString
 import com.peter.overtimecalculator.ui.AppUiState
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -34,6 +35,7 @@ fun RulesScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val defaults = OvertimeTheme.defaults
     var selectedModeName by rememberSaveable(uiState.config.yearMonth, uiState.config.rateSource) {
         mutableStateOf(uiState.config.rateSource.toInputMode().name)
     }
@@ -61,6 +63,8 @@ fun RulesScreen(
                 onBack = onBack,
             )
         },
+        containerColor = defaults.pageBackground,
+        contentColor = defaults.pageForeground,
         modifier = modifier,
     ) { innerPadding ->
         LazyColumn(

@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.OvertimeEntryValidator
 import com.peter.overtimecalculator.ui.components.CenteredDurationSlider
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -47,6 +48,8 @@ internal fun CompTimeDayEditorSheet(
     onDismiss: () -> Unit,
     onSave: (Int, DayType?) -> Unit,
 ) {
+    val defaults = OvertimeTheme.defaults
+    val subtleTextColor = defaults.pageForeground.copy(alpha = 0.72f)
     var overrideType by rememberSaveable(editor.date) { mutableStateOf(editor.currentOverride?.name ?: "") }
     val effectiveDayType = overrideType.takeIf { it.isNotBlank() }?.let(DayType::valueOf) ?: editor.resolvedDayType
     val minMinutes = minAllowedMinutes(effectiveDayType)
@@ -58,7 +61,12 @@ internal fun CompTimeDayEditorSheet(
         totalMinutes = totalMinutes.coerceIn(minMinutes, OvertimeEntryValidator.MAX_OVERTIME_MINUTES)
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.testTag("day_editor_sheet")) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        modifier = Modifier.testTag("day_editor_sheet"),
+        containerColor = defaults.pageBackground,
+        contentColor = defaults.pageForeground,
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -74,6 +82,8 @@ internal fun CompTimeDayEditorSheet(
             Surface(
                 tonalElevation = 1.dp,
                 shape = RoundedCornerShape(24.dp),
+                color = defaults.sectionContainer,
+                contentColor = defaults.pageForeground,
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("duration_stepper"),
@@ -120,13 +130,15 @@ internal fun CompTimeDayEditorSheet(
                             else -> "当前类型仅支持 0.0h 到 16.0h。"
                         },
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = subtleTextColor,
                     )
                 }
             }
             Surface(
                 tonalElevation = 1.dp,
                 shape = RoundedCornerShape(24.dp),
+                color = defaults.cardContainer,
+                contentColor = defaults.pageForeground,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(
@@ -143,7 +155,7 @@ internal fun CompTimeDayEditorSheet(
                         Text(
                             text = "系统判定",
                             style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = subtleTextColor,
                         )
                         Text(
                             text = dayTypeLabel(editor.resolvedDayType),
@@ -154,7 +166,7 @@ internal fun CompTimeDayEditorSheet(
                     Text(
                         text = "日期类型覆盖",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = subtleTextColor,
                     )
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),

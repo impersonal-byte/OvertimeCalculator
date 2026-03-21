@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.peter.overtimecalculator.ui.AppUiState
 import com.peter.overtimecalculator.ui.CalendarStartDay
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,6 +24,8 @@ fun PreferencesScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val defaults = OvertimeTheme.defaults
+
     Scaffold(
         topBar = {
             SettingsTopBar(
@@ -30,6 +33,8 @@ fun PreferencesScreen(
                 onBack = onBack,
             )
         },
+        containerColor = defaults.pageBackground,
+        contentColor = defaults.pageForeground,
         modifier = modifier,
     ) { innerPadding ->
         LazyColumn(

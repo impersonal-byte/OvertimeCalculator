@@ -1,6 +1,7 @@
 package com.peter.overtimecalculator.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,6 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,6 +40,7 @@ import com.peter.overtimecalculator.domain.DayCellUiState
 import com.peter.overtimecalculator.domain.HourlyRateSource
 import com.peter.overtimecalculator.domain.ZeroDecimal
 import com.peter.overtimecalculator.domain.toDisplayString
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -42,14 +49,30 @@ private val monthFormatter = DateTimeFormatter.ofPattern("yyyy 年 M 月", Local
 
 @Composable
 internal fun SummaryCard(uiState: AppUiState, dayCells: List<DayCellUiState>) {
+    val defaults = OvertimeTheme.defaults
+    val isDark = defaults.pageBackground.luminance() < 0.5f
+    val cardBrush = remember(defaults) {
+        Brush.verticalGradient(
+            colors = listOf(
+                defaults.cardElevatedContainer,
+                lerp(defaults.cardContainer, defaults.sectionContainer, 0.45f),
+            ),
+        )
+    }
+
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Transparent,
+            contentColor = defaults.pageForeground,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 1.dp else 4.dp),
         shape = RoundedCornerShape(28.dp),
         modifier = Modifier.testTag("summary_card"),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(cardBrush)
                 .padding(horizontal = 18.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -83,14 +106,14 @@ internal fun SummaryCard(uiState: AppUiState, dayCells: List<DayCellUiState>) {
                 Text(
                     text = "本月调休已超过加班余额，超出 ${formatStepperDuration(uiState.summary.uncoveredCompMinutes)} 暂未计入金额，请按公司规则处理。",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = defaults.warningTint,
                 )
             }
             if (uiState.config.hourlyRate <= ZeroDecimal) {
                 Text(
                     text = "时薪未设置，请到设置页录入或反推。",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = defaults.warningTint,
                 )
             }
 
@@ -107,8 +130,14 @@ internal fun SummaryCard(uiState: AppUiState, dayCells: List<DayCellUiState>) {
 
 @Composable
 private fun SummaryMetric(label: String, value: String) {
+    val defaults = OvertimeTheme.defaults
+
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(label, style = MaterialTheme.typography.labelMedium)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = defaults.pageForeground.copy(alpha = 0.72f),
+        )
         Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
     }
 }
@@ -119,7 +148,11 @@ internal fun MonthSwitcher(
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
 ) {
+    val defaults = OvertimeTheme.defaults
+
     Surface(
+        color = defaults.sectionContainer,
+        contentColor = defaults.pageForeground,
         tonalElevation = 2.dp,
         shape = RoundedCornerShape(24.dp),
         modifier = Modifier.fillMaxWidth(),
@@ -131,7 +164,7 @@ internal fun MonthSwitcher(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            IconButton(onClick = onPreviousMonth) {
+            MonthSwitchButton(onClick = onPreviousMonth, defaults = defaults) {
                 Icon(Icons.Default.ChevronLeft, contentDescription = "上个月")
             }
             Text(
@@ -139,11 +172,27 @@ internal fun MonthSwitcher(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
-            IconButton(onClick = onNextMonth) {
+            MonthSwitchButton(onClick = onNextMonth, defaults = defaults) {
                 Icon(Icons.Default.ChevronRight, contentDescription = "下个月")
             }
         }
     }
+}
+
+@Composable
+private fun MonthSwitchButton(
+    onClick: () -> Unit,
+    defaults: com.peter.overtimecalculator.ui.theme.ThemeDefaults,
+    content: @Composable () -> Unit,
+) {
+    IconButton(
+        onClick = onClick,
+        colors = IconButtonDefaults.iconButtonColors(
+            containerColor = defaults.navigationContainer,
+            contentColor = defaults.pageForeground,
+        ),
+        content = content,
+    )
 }
 
 @Composable
@@ -172,7 +221,7 @@ private fun OvertimeTrendChart(
 
     if (chartBars.none { it.heightRatio > 0f }) return
 
-    val barColor = MaterialTheme.colorScheme.onPrimaryContainer
+    val barColor = OvertimeTheme.defaults.accent
 
     Canvas(
         modifier = modifier.testTag("overtime_trend_chart"),

@@ -85,7 +85,7 @@ class SharedPreferencesAppearancePreferencesRepository(
     }
 
     private fun loadUseDynamicColor(): Boolean {
-        return sharedPreferences.getBoolean(KEY_USE_DYNAMIC_COLOR, true)
+        return sharedPreferences.getBoolean(KEY_USE_DYNAMIC_COLOR, false)
     }
 
     private fun loadSeedColor(): SeedColor {

@@ -14,10 +14,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.peter.overtimecalculator.domain.UpdateUiState
 import com.peter.overtimecalculator.ui.AppUpdateUiState
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,12 +37,22 @@ internal fun SettingsTopBar(
     title: String,
     onBack: () -> Unit,
 ) {
+    val defaults = OvertimeTheme.defaults
     TopAppBar(
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = defaults.navigationContainer,
+            scrolledContainerColor = defaults.sectionContainer,
+            titleContentColor = defaults.pageForeground,
+            navigationIconContentColor = defaults.pageForeground,
+        ),
         title = { Text(title) },
         navigationIcon = {
             IconButton(
                 onClick = onBack,
                 modifier = Modifier.testTag("back_button"),
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor = defaults.pageForeground,
+                ),
             ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
             }
@@ -52,11 +66,20 @@ internal fun SettingCard(
     subtitle: String,
     content: @Composable () -> Unit,
 ) {
-    Card(shape = RoundedCornerShape(28.dp)) {
+    val defaults = OvertimeTheme.defaults
+    val subtleTextColor = defaults.pageForeground.copy(alpha = 0.72f)
+    Card(
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = defaults.cardContainer,
+            contentColor = defaults.pageForeground,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
         Column(modifier = Modifier.fillMaxWidth().padding(18.dp)) {
             Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(6.dp))
-            Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(subtitle, color = subtleTextColor)
             Spacer(modifier = Modifier.height(16.dp))
             content()
         }
@@ -65,9 +88,12 @@ internal fun SettingCard(
 
 @Composable
 internal fun MultiplierBadge(label: String, value: String) {
+    val defaults = OvertimeTheme.defaults
     Surface(
         shape = RoundedCornerShape(18.dp),
         tonalElevation = 1.dp,
+        color = defaults.navigationContainer,
+        contentColor = defaults.pageForeground,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),

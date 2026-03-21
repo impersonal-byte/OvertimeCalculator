@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,6 +23,8 @@ fun DataManagementScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val defaults = OvertimeTheme.defaults
+
     Scaffold(
         topBar = {
             SettingsTopBar(
@@ -29,6 +32,8 @@ fun DataManagementScreen(
                 onBack = onBack,
             )
         },
+        containerColor = defaults.pageBackground,
+        contentColor = defaults.pageForeground,
         modifier = modifier,
     ) { innerPadding ->
         LazyColumn(

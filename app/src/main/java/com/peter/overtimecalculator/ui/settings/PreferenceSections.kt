@@ -9,12 +9,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.peter.overtimecalculator.ui.CalendarStartDay
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 
 @Composable
 internal fun CalendarStartDaySection(
     selectedStartDay: CalendarStartDay,
     onCalendarStartDayChange: (CalendarStartDay) -> Unit,
 ) {
+    val defaults = OvertimeTheme.defaults
+
     SettingCard("日历显示", "选择日历每周的起始日，修改后会立即同步到首页。") {
         SingleChoiceSegmentedButtonRow(
             modifier = Modifier
@@ -28,6 +31,12 @@ internal fun CalendarStartDaySection(
                     shape = SegmentedButtonDefaults.itemShape(
                         index = index,
                         count = CalendarStartDay.entries.size,
+                    ),
+                    colors = SegmentedButtonDefaults.colors(
+                        activeContainerColor = defaults.accent.copy(alpha = 0.2f),
+                        activeContentColor = defaults.pageForeground,
+                        inactiveContainerColor = defaults.cardContainer,
+                        inactiveContentColor = defaults.pageForeground,
                     ),
                 ) {
                     Text(if (option == CalendarStartDay.MONDAY) "周一为首日" else "周日为首日")

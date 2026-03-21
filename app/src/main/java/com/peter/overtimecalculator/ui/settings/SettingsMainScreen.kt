@@ -17,6 +17,7 @@ import com.peter.overtimecalculator.domain.toDisplayString
 import com.peter.overtimecalculator.ui.AppUiState
 import com.peter.overtimecalculator.ui.AppUpdateUiState
 import com.peter.overtimecalculator.ui.CalendarStartDay
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 
 @Composable
 fun SettingsMainScreen(
@@ -30,6 +31,7 @@ fun SettingsMainScreen(
     onNavigateToAbout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val defaults = OvertimeTheme.defaults
     val currentRateText = if (uiState.config.hourlyRate <= ZeroDecimal) {
         "未设置"
     } else {
@@ -52,6 +54,8 @@ fun SettingsMainScreen(
                 onBack = onBack,
             )
         },
+        containerColor = defaults.pageBackground,
+        contentColor = defaults.pageForeground,
         modifier = modifier,
     ) { innerPadding ->
         LazySettingsColumn(innerPadding = innerPadding) {

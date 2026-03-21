@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.peter.overtimecalculator.domain.DayCellUiState
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -41,6 +42,7 @@ internal fun CalendarGrid(
     onDayClick: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val defaults = OvertimeTheme.defaults
     val dayMap = remember(dayCells) { dayCells.associateBy { it.date } }
     val presentationMap = remember(dayCells) { buildCalendarCellPresentations(dayCells) }
     val today = remember { LocalDate.now() }
@@ -69,7 +71,7 @@ internal fun CalendarGrid(
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = defaults.pageForeground.copy(alpha = 0.62f),
                 )
             }
         }
@@ -117,8 +119,9 @@ private fun DayCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val defaults = OvertimeTheme.defaults
     val colors = dayCardColors(presentation)
-    val borderColor = if (isToday) MaterialTheme.colorScheme.primary else colors.border
+    val borderColor = if (isToday) defaults.accent else colors.border
     val borderWidth = if (isToday) 2.dp else 1.dp
 
     Surface(
@@ -144,7 +147,7 @@ private fun DayCard(
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleSmall,
                 color = if (presentation.tier == CalendarCellIntensityTier.NONE) {
-                    MaterialTheme.colorScheme.onSurface
+                    defaults.pageForeground
                 } else {
                     colors.content
                 },
@@ -176,45 +179,49 @@ private fun DayCard(
 
 @Composable
 private fun dayCardColors(presentation: CalendarCellPresentation): DayCardColors {
-    val scheme = MaterialTheme.colorScheme
+    val defaults = OvertimeTheme.defaults
     return when (presentation.colorRole) {
         CalendarCellColorRole.DEFAULT -> DayCardColors(
-            container = scheme.surface,
-            content = scheme.onSurface,
-            border = scheme.outlineVariant,
+            container = defaults.cardContainer,
+            content = defaults.pageForeground,
+            border = defaults.outline,
         )
         CalendarCellColorRole.COMP_TIME -> layeredColors(
             tier = presentation.tier,
-            base = scheme.surface,
-            target = scheme.surfaceVariant,
-            content = scheme.onSurfaceVariant,
-            border = scheme.outline,
+            base = defaults.cardContainer,
+            target = defaults.sectionContainer,
+            content = defaults.pageForeground,
+            border = defaults.outline,
+            fallbackContent = defaults.pageForeground,
         )
         CalendarCellColorRole.WORKDAY_OVERTIME -> layeredColors(
             tier = presentation.tier,
-            base = scheme.surface,
-            target = scheme.secondaryContainer,
-            content = scheme.onSecondaryContainer,
-            border = scheme.secondary,
+            base = defaults.cardContainer,
+            target = lerp(defaults.sectionContainer, defaults.warningTint, 0.32f),
+            content = defaults.pageForeground,
+            border = defaults.warningTint,
+            fallbackContent = defaults.pageForeground,
         )
         CalendarCellColorRole.REST_DAY_OVERTIME -> layeredColors(
             tier = presentation.tier,
-            base = scheme.surface,
-            target = scheme.primaryContainer,
-            content = scheme.onPrimaryContainer,
-            border = scheme.primary,
+            base = defaults.cardContainer,
+            target = lerp(defaults.sectionContainer, defaults.accent, 0.28f),
+            content = defaults.pageForeground,
+            border = defaults.accent,
+            fallbackContent = defaults.pageForeground,
         )
         CalendarCellColorRole.HOLIDAY_OVERTIME -> layeredColors(
             tier = presentation.tier,
-            base = scheme.surface,
-            target = scheme.errorContainer,
-            content = scheme.onErrorContainer,
-            border = scheme.error,
+            base = defaults.cardContainer,
+            target = lerp(defaults.sectionContainer, defaults.warningTint, 0.24f),
+            content = defaults.pageForeground,
+            border = defaults.warningTint,
+            fallbackContent = defaults.pageForeground,
         )
         CalendarCellColorRole.HOLIDAY_OVERTIME_HIGH -> DayCardColors(
-            container = scheme.error,
-            content = scheme.onError,
-            border = scheme.error,
+            container = lerp(defaults.cardElevatedContainer, defaults.warningTint, 0.86f),
+            content = defaults.accentOn,
+            border = defaults.warningTint,
         )
     }
 }
@@ -226,6 +233,7 @@ private fun layeredColors(
     target: Color,
     content: Color,
     border: Color,
+    fallbackContent: Color,
 ): DayCardColors {
     val amount = when (tier) {
         CalendarCellIntensityTier.NONE -> 0f
@@ -241,8 +249,8 @@ private fun layeredColors(
     }
     return DayCardColors(
         container = lerp(base, target, amount),
-        content = if (amount >= 0.6f) content else MaterialTheme.colorScheme.onSurface,
-        border = lerp(MaterialTheme.colorScheme.outlineVariant, border, borderAmount),
+        content = if (amount >= 0.6f) content else fallbackContent,
+        border = lerp(OvertimeTheme.defaults.outline, border, borderAmount),
     )
 }
 

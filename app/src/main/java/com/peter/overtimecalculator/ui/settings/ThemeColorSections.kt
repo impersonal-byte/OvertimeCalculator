@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.peter.overtimecalculator.domain.SeedColor
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 import com.peter.overtimecalculator.ui.theme.ThemePaletteSpec
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -45,10 +46,12 @@ internal fun ThemeColorSection(
     onUseDynamicColorChange: (Boolean) -> Unit,
     onSeedColorChange: (SeedColor) -> Unit,
 ) {
+    val defaults = OvertimeTheme.defaults
+    val subtleTextColor = defaults.pageForeground.copy(alpha = 0.72f)
     Surface(
         shape = RoundedCornerShape(26.dp),
         tonalElevation = 1.dp,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
+        color = defaults.sectionContainer,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -76,7 +79,7 @@ internal fun ThemeColorSection(
                         } else {
                             "需要 Android 12 及以上版本"
                         },
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = subtleTextColor,
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
@@ -136,6 +139,8 @@ private fun ThemePaletteItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val defaults = OvertimeTheme.defaults
+    val subtleTextColor = defaults.pageForeground.copy(alpha = 0.72f)
     Column(
         modifier = modifier.width(72.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -148,14 +153,14 @@ private fun ThemePaletteItem(
                 .clip(RoundedCornerShape(24.dp))
                 .background(
                     if (selected) {
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+                        defaults.accent.copy(alpha = 0.2f)
                     } else {
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                        defaults.cardContainer
                     },
                 )
                 .border(
                     width = if (selected) 2.dp else 1.dp,
-                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
+                    color = if (selected) defaults.accent else defaults.outline.copy(alpha = 0.42f),
                     shape = RoundedCornerShape(24.dp),
                 )
                 .clickable(enabled = enabled, onClick = onClick)
@@ -193,7 +198,7 @@ private fun ThemePaletteItem(
         Text(
             text = paletteSpec.displayName,
             style = MaterialTheme.typography.labelLarge,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (selected) defaults.accent else subtleTextColor,
         )
     }
 }

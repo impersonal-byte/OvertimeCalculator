@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.peter.overtimecalculator.domain.AppTheme
 import com.peter.overtimecalculator.domain.SeedColor
 import com.peter.overtimecalculator.ui.AppUiState
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 import com.peter.overtimecalculator.ui.theme.ThemePaletteSpecs
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -35,6 +36,8 @@ fun ThemeSettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val defaults = OvertimeTheme.defaults
+    val subtleTextColor = defaults.pageForeground.copy(alpha = 0.72f)
     val supportsDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val effectiveDynamicColor = supportsDynamicColor && uiState.useDynamicColor
     val paletteSpecs = ThemePaletteSpecs.all
@@ -53,6 +56,8 @@ fun ThemeSettingsScreen(
                 onBack = onBack,
             )
         },
+        containerColor = defaults.pageBackground,
+        contentColor = defaults.pageForeground,
         modifier = modifier,
     ) { innerPadding ->
         LazyColumn(
@@ -103,7 +108,7 @@ fun ThemeSettingsScreen(
             item {
                 Surface(
                     shape = RoundedCornerShape(22.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.26f),
+                    color = defaults.cardContainer,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(
@@ -118,7 +123,7 @@ fun ThemeSettingsScreen(
                         Text(
                             text = overviewState.supportingText,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = subtleTextColor,
                         )
                     }
                 }

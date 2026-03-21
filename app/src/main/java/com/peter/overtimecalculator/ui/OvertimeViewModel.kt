@@ -88,7 +88,7 @@ data class AppUiState(
                 config = config,
                 calendarStartDay = CalendarStartDay.MONDAY,
                 appTheme = AppTheme.SYSTEM,
-                useDynamicColor = true,
+                useDynamicColor = false,
                 seedColor = SeedColor.CLAY,
             )
         }

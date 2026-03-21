@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.peter.overtimecalculator.ui.formatMinutes
+import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 
 internal enum class HourlyRateInputMode(val label: String) {
     MANUAL("手动输入"),
@@ -45,6 +46,8 @@ internal fun HourlyRateControlSection(
     onReversePayTextChange: (String) -> Unit,
     onReverseEngineer: () -> Unit,
 ) {
+    val defaults = OvertimeTheme.defaults
+    val subtleTextColor = defaults.pageForeground.copy(alpha = 0.72f)
     SettingCard("时薪控制中心", "在手动输入和总额反推之间切换，本月配置会随保存结果更新。") {
         SingleChoiceSegmentedButtonRow(
             modifier = Modifier
@@ -112,13 +115,13 @@ internal fun HourlyRateControlSection(
                     Text(
                         "时薪 = 总额 / Σ(每日工时 × 当日倍率)",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = subtleTextColor,
                         modifier = Modifier.testTag("hourly_formula"),
                     )
                     Text(
                         "当前月已录入 ${formatMinutes(totalMinutes)}。若没有每日明细，反推会被阻止。",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = subtleTextColor,
                     )
                     Button(
                         onClick = onReverseEngineer,
@@ -177,9 +180,13 @@ internal fun MultiplierEditorSheet(
     onResetDefaults: () -> Unit,
     onSave: () -> Unit,
 ) {
+    val defaults = OvertimeTheme.defaults
+    val subtleTextColor = defaults.pageForeground.copy(alpha = 0.72f)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         modifier = Modifier.testTag("multiplier_editor_sheet"),
+        containerColor = defaults.pageBackground,
+        contentColor = defaults.pageForeground,
     ) {
         Column(
             modifier = Modifier
@@ -191,7 +198,7 @@ internal fun MultiplierEditorSheet(
             Text(
                 "默认中国常规值为 1.5 / 2.0 / 3.0。",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = subtleTextColor,
             )
             OutlinedTextField(
                 value = weekdayRateText,

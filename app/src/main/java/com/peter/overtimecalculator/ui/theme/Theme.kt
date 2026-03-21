@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
 import com.peter.overtimecalculator.domain.SeedColor
 
@@ -27,8 +28,12 @@ fun OvertimeCalculatorTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = content,
-    )
+    val themeDefaults = buildThemeDefaults(colorScheme)
+
+    CompositionLocalProvider(LocalThemeDefaults provides themeDefaults) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            content = content,
+        )
+    }
 }

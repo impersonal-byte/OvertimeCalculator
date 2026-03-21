@@ -5,6 +5,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import com.peter.overtimecalculator.domain.SeedColor
+import com.google.android.material.color.utilities.Hct
+import kotlin.math.max
+import kotlin.math.min
 
 data class ThemePaletteSpec(
     val seedColor: SeedColor,
@@ -16,201 +19,62 @@ data class ThemePaletteSpec(
     val darkPreviewAccent: Color,
 )
 
+private data class ThemeSeedDefinition(
+    val seedColor: SeedColor,
+    val displayName: String,
+    val seedArgb: Int,
+)
+
 object ThemePaletteSpecs {
-    val all: List<ThemePaletteSpec> = listOf(
-        palette(
-            seedColor = SeedColor.CLAY,
-            displayName = "Clay",
-            primary = ClayPrimary,
-            secondary = Color(0xFFB45309),
-            tertiary = ClayAccent,
-            lightBackground = ClayBackground,
-            lightSurface = ClaySurface,
-            darkPrimary = Color(0xFFF59E0B),
-            darkSecondary = Color(0xFFFBBF24),
-            darkTertiary = Color(0xFF34D399),
-            darkBackground = Color(0xFF17120D),
-            darkSurface = Color(0xFF211A14),
-            swatchColors = listOf(
-                Color(0xFFF2D3B5),
-                Color(0xFFD4A373),
-                Color(0xFFE9EDC9),
-                Color(0xFF7C5C46),
-            ),
-        ),
-        palette(
-            seedColor = SeedColor.MINT_GREEN,
-            displayName = "Mint",
-            primary = Color(0xFF2C8C74),
-            secondary = Color(0xFF61B59B),
-            tertiary = Color(0xFF136F63),
-            lightBackground = Color(0xFFF0FAF7),
-            lightSurface = Color(0xFFFBFFFD),
-            darkPrimary = Color(0xFF7AE7C7),
-            darkSecondary = Color(0xFF43C6AC),
-            darkTertiary = Color(0xFFA7F3D0),
-            darkBackground = Color(0xFF081814),
-            darkSurface = Color(0xFF0F211B),
-            swatchColors = listOf(
-                Color(0xFFA8E6CF),
-                Color(0xFF7FD8BE),
-                Color(0xFF5DBB9C),
-                Color(0xFF2C8C74),
-            ),
-        ),
-        palette(
-            seedColor = SeedColor.AQUA,
-            displayName = "Aqua",
-            primary = Color(0xFF1E88A8),
-            secondary = Color(0xFF54B7D3),
-            tertiary = Color(0xFF0C6B78),
-            lightBackground = Color(0xFFF1FBFD),
-            lightSurface = Color(0xFFF9FEFF),
-            darkPrimary = Color(0xFF7BDFF2),
-            darkSecondary = Color(0xFF4CC9F0),
-            darkTertiary = Color(0xFF90E0EF),
-            darkBackground = Color(0xFF07171D),
-            darkSurface = Color(0xFF10232A),
-            swatchColors = listOf(
-                Color(0xFF9EE8F5),
-                Color(0xFF72D6EA),
-                Color(0xFF46B9D1),
-                Color(0xFF1E88A8),
-            ),
-        ),
-        palette(
-            seedColor = SeedColor.SKY_BLUE,
-            displayName = "Sky",
-            primary = Color(0xFF4F83CC),
-            secondary = Color(0xFF8BB8E8),
-            tertiary = Color(0xFF2E5F9E),
-            lightBackground = Color(0xFFF4F8FF),
-            lightSurface = Color(0xFFFCFDFF),
-            darkPrimary = Color(0xFF9BC4FF),
-            darkSecondary = Color(0xFF60A5FA),
-            darkTertiary = Color(0xFFBFDBFE),
-            darkBackground = Color(0xFF09111D),
-            darkSurface = Color(0xFF121C29),
-            swatchColors = listOf(
-                Color(0xFFBFDBFE),
-                Color(0xFF93C5FD),
-                Color(0xFF60A5FA),
-                Color(0xFF4F83CC),
-            ),
-        ),
-        palette(
-            seedColor = SeedColor.LAVENDER,
-            displayName = "Lavender",
-            primary = Color(0xFF7E8BD8),
-            secondary = Color(0xFFB2B7F1),
-            tertiary = Color(0xFF5C6BC0),
-            lightBackground = Color(0xFFF6F6FF),
-            lightSurface = Color(0xFFFDFDFF),
-            darkPrimary = Color(0xFFC7C9FF),
-            darkSecondary = Color(0xFFA5B4FC),
-            darkTertiary = Color(0xFFE0E7FF),
-            darkBackground = Color(0xFF111222),
-            darkSurface = Color(0xFF1A1C31),
-            swatchColors = listOf(
-                Color(0xFFD9DBF9),
-                Color(0xFFBEC4F6),
-                Color(0xFF9FA8ED),
-                Color(0xFF7E8BD8),
-            ),
-        ),
-        palette(
-            seedColor = SeedColor.ORCHID,
-            displayName = "Orchid",
-            primary = Color(0xFFA27AD6),
-            secondary = Color(0xFFD0B3F5),
-            tertiary = Color(0xFF7E57C2),
-            lightBackground = Color(0xFFFBF7FF),
-            lightSurface = Color(0xFFFFFCFF),
-            darkPrimary = Color(0xFFE1C8FF),
-            darkSecondary = Color(0xFFC4B5FD),
-            darkTertiary = Color(0xFFF3E8FF),
-            darkBackground = Color(0xFF171122),
-            darkSurface = Color(0xFF20182E),
-            swatchColors = listOf(
-                Color(0xFFE7D6FB),
-                Color(0xFFD4B8F5),
-                Color(0xFFB98BE8),
-                Color(0xFFA27AD6),
-            ),
-        ),
-        palette(
-            seedColor = SeedColor.LILAC,
-            displayName = "Lilac",
-            primary = Color(0xFFB58AD9),
-            secondary = Color(0xFFE0C7F4),
-            tertiary = Color(0xFF9B6BC0),
-            lightBackground = Color(0xFFFEF8FF),
-            lightSurface = Color(0xFFFFFCFF),
-            darkPrimary = Color(0xFFF0D6FF),
-            darkSecondary = Color(0xFFD8B4FE),
-            darkTertiary = Color(0xFFF5E8FF),
-            darkBackground = Color(0xFF1B1020),
-            darkSurface = Color(0xFF24182A),
-            swatchColors = listOf(
-                Color(0xFFF0DCF8),
-                Color(0xFFE2C2F4),
-                Color(0xFFC99BE9),
-                Color(0xFFB58AD9),
-            ),
-        ),
-        palette(
-            seedColor = SeedColor.ROSE,
-            displayName = "Rose",
-            primary = Color(0xFFD777A7),
-            secondary = Color(0xFFF2B8D7),
-            tertiary = Color(0xFFBF5F8C),
-            lightBackground = Color(0xFFFFF6FA),
-            lightSurface = Color(0xFFFFFBFD),
-            darkPrimary = Color(0xFFFFC2DA),
-            darkSecondary = Color(0xFFF9A8D4),
-            darkTertiary = Color(0xFFFBCFE8),
-            darkBackground = Color(0xFF1F0F18),
-            darkSurface = Color(0xFF2A1721),
-            swatchColors = listOf(
-                Color(0xFFF7D4E6),
-                Color(0xFFF2B8D7),
-                Color(0xFFE995C0),
-                Color(0xFFD777A7),
-            ),
-        ),
+    private val seedDefinitions = listOf(
+        ThemeSeedDefinition(SeedColor.CLAY, "Clay", 0xFFD4A373.toInt()),
+        ThemeSeedDefinition(SeedColor.MINT_GREEN, "Mint", 0xFF2C8C74.toInt()),
+        ThemeSeedDefinition(SeedColor.AQUA, "Aqua", 0xFF1E88A8.toInt()),
+        ThemeSeedDefinition(SeedColor.SKY_BLUE, "Sky", 0xFF4F83CC.toInt()),
+        ThemeSeedDefinition(SeedColor.LAVENDER, "Lavender", 0xFF7E8BD8.toInt()),
+        ThemeSeedDefinition(SeedColor.ORCHID, "Orchid", 0xFFA27AD6.toInt()),
+        ThemeSeedDefinition(SeedColor.LILAC, "Lilac", 0xFFB58AD9.toInt()),
+        ThemeSeedDefinition(SeedColor.ROSE, "Rose", 0xFFD777A7.toInt()),
     )
+
+    val all: List<ThemePaletteSpec> = seedDefinitions.map(::generatePalette)
 
     fun fromSeedColor(seedColor: SeedColor): ThemePaletteSpec {
         return all.firstOrNull { it.seedColor == seedColor } ?: all.first()
     }
 }
 
-private fun palette(
-    seedColor: SeedColor,
-    displayName: String,
-    primary: Color,
-    secondary: Color,
-    tertiary: Color,
-    lightBackground: Color,
-    lightSurface: Color,
-    darkPrimary: Color,
-    darkSecondary: Color,
-    darkTertiary: Color,
-    darkBackground: Color,
-    darkSurface: Color,
-    swatchColors: List<Color>,
-): ThemePaletteSpec {
+private fun generatePalette(definition: ThemeSeedDefinition): ThemePaletteSpec {
+    val seedHct = Hct.fromInt(definition.seedArgb)
+    val primaryChroma = max(36.0, seedHct.chroma)
+    val secondaryChroma = min(24.0, primaryChroma * 0.45)
+    val tertiaryHue = (seedHct.hue + 50.0) % 360.0
+    val tertiaryChroma = min(28.0, primaryChroma * 0.5)
+    val neutralChroma = 8.0
+
+    val lightPrimary = hct(seedHct.hue, primaryChroma, 40.0)
+    val lightSecondary = hct(seedHct.hue, secondaryChroma, 45.0)
+    val lightTertiary = hct(tertiaryHue, tertiaryChroma, 45.0)
+    val lightBackground = hct(seedHct.hue, neutralChroma, 98.0)
+    val lightSurface = hct(seedHct.hue, neutralChroma, 99.0)
+
+    val darkPrimary = hct(seedHct.hue, primaryChroma, 80.0)
+    val darkSecondary = hct(seedHct.hue, secondaryChroma, 76.0)
+    val darkTertiary = hct(tertiaryHue, tertiaryChroma, 80.0)
+    val darkBackground = hct(seedHct.hue, neutralChroma, 11.0)
+    val darkSurface = hct(seedHct.hue, neutralChroma, 16.0)
+
     return ThemePaletteSpec(
-        seedColor = seedColor,
-        displayName = displayName,
+        seedColor = definition.seedColor,
+        displayName = definition.displayName,
         lightColorScheme = lightColorScheme(
-            primary = primary,
-            secondary = secondary,
-            tertiary = tertiary,
+            primary = lightPrimary,
+            secondary = lightSecondary,
+            tertiary = lightTertiary,
             background = lightBackground,
             surface = lightSurface,
             surfaceVariant = lightBackground.copy(alpha = 0.92f),
-            primaryContainer = primary.copy(alpha = 0.16f),
+            primaryContainer = hct(seedHct.hue, primaryChroma, 90.0),
         ),
         darkColorScheme = darkColorScheme(
             primary = darkPrimary,
@@ -219,10 +83,19 @@ private fun palette(
             background = darkBackground,
             surface = darkSurface,
             surfaceVariant = darkSurface.copy(alpha = 0.9f),
-            primaryContainer = darkPrimary.copy(alpha = 0.18f),
+            primaryContainer = hct(seedHct.hue, primaryChroma, 30.0),
         ),
-        swatchColors = swatchColors,
-        lightPreviewAccent = secondary,
+        swatchColors = listOf(
+            hct(seedHct.hue, primaryChroma, 90.0),
+            hct(seedHct.hue, primaryChroma, 75.0),
+            hct(seedHct.hue, primaryChroma, 60.0),
+            hct(seedHct.hue, primaryChroma, 45.0),
+        ),
+        lightPreviewAccent = lightSecondary,
         darkPreviewAccent = darkPrimary,
     )
+}
+
+private fun hct(hue: Double, chroma: Double, tone: Double): Color {
+    return Color(Hct.from(hue, chroma, tone).toInt())
 }
