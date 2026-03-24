@@ -24,6 +24,14 @@ Requirements for the initial GSD planning baseline. Each maps to roadmap phases.
 - [ ] **DATA-03**: Restored data preserves `monthly_config`, `overtime_entry`, and `holiday_override` semantics, including month-level configuration propagation behavior
 - [x] **DATA-04**: CSV export remains available as a lightweight share/export feature and is clearly separate from backup/restore
 
+### UX Detail Polish
+
+- [ ] **UXP-01**: Workday day-entry uses a 6-hour-focused slider range for finer control without breaking valid comp-time editing or legacy overtime records
+- [ ] **UXP-02**: Theme mode switching is available as a compact 3-option control with all choices visible without horizontal scrolling
+- [ ] **UXP-03**: Settings screens present status-bar/top-bar chrome that visually matches the settings surface language in light and dark themes
+- [ ] **UXP-04**: Data-management backup, restore, and CSV export actions use coordinated button emphasis so no single action looks visually out of family
+- [ ] **UXP-05**: Only 3x-pay statutory dates resolve as `HOLIDAY`; other official days off resolve as `REST_DAY`, while makeup workdays remain `WORKDAY`
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -54,10 +62,15 @@ Deferred to future release. Tracked but not in current roadmap.
 | DATA-02 | Phase 3 | Complete |
 | DATA-03 | Phase 3 | Complete |
 | DATA-04 | Phase 3 | Complete |
+| UXP-01 | Phase 5 | Planned |
+| UXP-02 | Phase 5 | Planned |
+| UXP-03 | Phase 5 | Planned |
+| UXP-04 | Phase 5 | Planned |
+| UXP-05 | Phase 5 | Planned |
 
 **Coverage:**
-- v1 requirements: 8 total
-- Mapped to phases: 8
+- v1 requirements: 13 total
+- Mapped to phases: 13
 - Unmapped: 0 ✓
 
 ---
