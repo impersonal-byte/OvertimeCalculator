@@ -166,7 +166,7 @@ class MainFlowTest {
     }
 
     @Test
-    fun themeSettingsShowsPreviewCardsAndPaletteGrid() {
+    fun themeSettingsShowsCompactModeChooserAndPaletteGrid() {
         composeRule.onNodeWithTag("settings_button").performClick()
         waitForTag("settings_main_screen")
 
@@ -177,6 +177,7 @@ class MainFlowTest {
         composeRule.onNodeWithTag("theme_overview_card").assertIsDisplayed()
         composeRule.onNodeWithTag("theme_overview_mode").assertIsDisplayed()
         composeRule.onNodeWithTag("theme_overview_palette").assertIsDisplayed()
+        composeRule.onNodeWithTag("theme_mode_chooser").assertIsDisplayed()
         composeRule.onNodeWithTag("theme_mode_light").assertIsDisplayed()
         composeRule.onNodeWithTag("theme_mode_dark").assertIsDisplayed()
         composeRule.onNodeWithTag("theme_mode_system").assertIsDisplayed()

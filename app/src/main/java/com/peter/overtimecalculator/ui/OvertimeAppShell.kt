@@ -2,6 +2,7 @@ package com.peter.overtimecalculator.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -11,6 +12,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -21,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.peter.overtimecalculator.ui.settings.SettingsDestinations
 import com.peter.overtimecalculator.ui.theme.OvertimeTheme
@@ -52,6 +53,7 @@ internal fun OvertimeAppShell(
     onSaveEditor: (java.time.LocalDate, Int, com.peter.overtimecalculator.domain.DayType?) -> Unit,
 ) {
     val defaults = OvertimeTheme.defaults
+    val isSettingsRoute = currentRoute.startsWith("settings")
     val shellGradient = Brush.verticalGradient(
         colors = listOf(
             defaults.accent.copy(alpha = 0.14f),
@@ -65,16 +67,23 @@ internal fun OvertimeAppShell(
             .fillMaxSize()
             .background(defaults.pageBackground),
     ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(shellGradient),
-        )
+        if (!isSettingsRoute) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(shellGradient),
+            )
+        }
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             containerColor = Color.Transparent,
             contentColor = defaults.pageForeground,
+            contentWindowInsets = if (isSettingsRoute) {
+                WindowInsets(0, 0, 0, 0)
+            } else {
+                ScaffoldDefaults.contentWindowInsets
+            },
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             topBar = {
                 AppTopBar(

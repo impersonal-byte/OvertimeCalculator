@@ -85,7 +85,6 @@ fun ThemeSettingsScreen(
             item {
                 ThemeModeChooser(
                     selectedTheme = uiState.appTheme,
-                    activePalette = activePalette,
                     onThemeSelected = onAppThemeChange,
                 )
             }
