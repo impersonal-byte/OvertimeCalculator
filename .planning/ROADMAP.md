@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: No handwritten input** - Define a non-handwritten, structured day-entry interaction for overtime and comp time
 - [x] **Phase 3: Data backup and restore** - Close the export-only data gap with app-controlled full-fidelity backup and restore (completed 2026-03-15)
 - [x] **Phase 4: Animeko visual migration** - Reference the in-repo `animeko` implementation and migrate its interface and color language into this app, replacing prior custom UI styling, including merged real-device light-theme hierarchy follow-up after rollout (completed 2026-03-21)
-- [ ] **Phase 5: 细节体验优化** - Polish post-migration interaction fidelity in day entry, settings chrome, data-management actions, and holiday classification
+- [x] **Phase 5: 细节体验优化** - Polish post-migration interaction fidelity in day entry, settings chrome, data-management actions, and holiday classification (completed 2026-03-28)
 
 ## Phase Details
 
@@ -44,7 +44,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 2. No handwritten input | 2/2 | Complete | 2026-03-15 |
 | 3. Data backup and restore | 4/4 | Complete    | 2026-03-15 |
 | 4. Animeko visual migration | 6/6 | Complete | 2026-03-21 |
-| 5. 细节体验优化 | 0/3 | Not started | - |
+| 5. 细节体验优化 | 3/3 | Complete | 2026-03-28 |
 
 ### Phase 2: No handwritten input
 
@@ -117,8 +117,8 @@ Plans:
   5. Only statutory 3x-pay dates resolve as `HOLIDAY`, while other official days off resolve as `REST_DAY` and makeup workdays still resolve as `WORKDAY`.
 
 Plans:
-- [ ] 05-01: Reclassify holiday day types around 3x-only statutory dates
-- [ ] 05-02: Tighten day-entry precision and align data-management actions
-- [ ] 05-03: Compact theme switching and harmonize settings chrome
+- [x] 05-01: Reclassify holiday day types around 3x-only statutory dates
+- [x] 05-02: Tighten day-entry precision and align data-management actions
+- [x] 05-03: Compact theme switching and harmonize settings chrome
 
 

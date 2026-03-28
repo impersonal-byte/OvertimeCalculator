@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: complete
-stopped_at: Folded former Phase 4.1 follow-up into Phase 04 planning docs
-last_updated: "2026-03-21T13:15:00.000Z"
-last_activity: 2026-03-21 - Merged real-device light-theme follow-up back into Phase 04 docs
+stopped_at: Completed Phase 05 detail experience polish with device-verification caveat documented in summaries
+last_updated: "2026-03-28T15:12:00Z"
+last_activity: 2026-03-28 - Completed Phase 05 execution docs after holiday, slider, and settings polish implementation
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 12
-  completed_plans: 12
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 15
+  completed_plans: 15
 ---
 
 # Project State
@@ -20,23 +20,23 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-03-14)
 
 **Core value:** 用户可以稳定记录每天的加班或调休，并即时得到可信的当月加班工资结果。
-**Current focus:** Phase 04 consolidated with post-device follow-up; waiting for next phase selection
+**Current focus:** Phase 05 complete; ready for next phase selection or follow-up real-device verification if a visual sign-off pass is desired
 
 ## Current Position
 
-Phase: 4 of 4 (Animeko visual migration)
-Plan: 6 of 6 in current phase
+Phase: 5 of 5 (细节体验优化)
+Plan: 3 of 3 in current phase
 Status: Complete
-Last activity: 2026-03-21 - Merged real-device light-theme follow-up back into Phase 04 docs
+Last activity: 2026-03-28 - Closed Phase 05 summaries and planning state after implementation verification
 
 Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: ~15 min
-- Total execution time: ~1 hour
+- Total plans completed: 15
+- Average duration: mixed/interrupted sessions
+- Total execution time: multi-session
 
 **By Phase:**
 
@@ -46,9 +46,10 @@ Progress: [██████████] 100%
 | 2 | 2 | multi-session | multi-session |
 | 3 | 4 | multi-session | multi-session |
 | 4 | 6 | mixed + real-device follow-up | mixed |
+| 5 | 3 | interrupted implementation + doc closure | mixed |
 
 **Recent Trend:**
-- Last 5 plans: -
+- Last 5 plans: 04-05, 04-06, 05-01, 05-02, 05-03
 - Trend: Stable
 
 ## Accumulated Context
@@ -71,6 +72,10 @@ Recent decisions affecting current work:
 - [Phase 4]: Use clean-room migration with semantic parity rather than source-level copy
 - [Phase 4]: Set dynamic color default OFF with user opt-in and precedence when enabled
 - [Phase 4]: Build HCT-generated palette flow and semantic ThemeDefaults composition local
+- [Phase 5]: Keep holiday snapshot schema backward-compatible by adding optional `restDates` instead of bumping schema version
+- [Phase 5]: Preserve `HolidayCalendar.resolveDayType()` as the single source of truth for 3x/2x/1x overtime semantics
+- [Phase 5]: Focus workday slider edits on a 6-hour positive range while preserving legacy values above 6h until users intentionally change them
+- [Phase 5]: Use a segmented theme chooser and route-aware shell chrome rather than per-screen status-bar hacks
 
 ### Pending Todos
 
@@ -91,10 +96,12 @@ None yet.
 - Phase 4 follow-up iteration 2 executed: replaced border patch with tonal layered cards per device feedback
 - Phase 4 follow-up iteration 3 executed: reinforced light-theme tonal hierarchy and luminance guardrails
 - Phase 4 consolidated: former 4.1 follow-up merged back into the main Phase 04 reading path (2026-03-21)
+- Phase 5 added: detail-experience polish for holiday semantics, slider precision, and settings cohesion
+- Phase 5 completed: holiday typing, day-entry precision, data-management action hierarchy, and settings chrome/theme switch polish documented on 2026-03-28
 
 ### Blockers/Concerns
 
-None yet.
+- No connected Android device was available during Phase 05 execution, so instrumentation/manual visual verification remains pending if final real-device sign-off is required.
 
 ### Quick Tasks Completed
 
@@ -104,8 +111,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T13:15:00.000Z
-Stopped at: Folded former Phase 4.1 follow-up into Phase 04 planning docs
-Resume file: .planning/phases/04-animeko-visual-migration/04-06-SUMMARY.md
+Last session: 2026-03-28T15:12:00Z
+Stopped at: Completed Phase 05 detail experience polish with device-verification caveat documented in summaries
+Resume file: None
 
 
