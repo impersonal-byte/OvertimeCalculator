@@ -19,6 +19,7 @@ class CenteredDurationSliderMappingTest {
         assertEquals(0, DurationMapper.clampAndSnap(-15, 0, 960))
         assertEquals(960, DurationMapper.clampAndSnap(965, -480, 960))
         assertEquals(-480, DurationMapper.clampAndSnap(-999, -480, 960))
+        assertEquals(360, DurationMapper.clampAndSnap(965, -480, 360))
     }
 
     @Test

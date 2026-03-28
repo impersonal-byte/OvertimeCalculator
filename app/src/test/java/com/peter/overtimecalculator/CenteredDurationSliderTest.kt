@@ -10,8 +10,16 @@ class CenteredDurationSliderTest {
     @Test
     fun workdayTicks_areSparseAndCenteredAroundZero() {
         assertEquals(
-            listOf(-480, -240, 0, 240, 600, 960),
-            buildMajorTickMinutes(minMinutes = -480, maxMinutes = 960),
+            listOf(-480, -240, 0, 120, 240, 360),
+            buildMajorTickMinutes(minMinutes = -480, maxMinutes = 360),
+        )
+    }
+
+    @Test
+    fun legacyWorkdayTicks_keepFocusedMarkersBeforeExtendedPositiveMax() {
+        assertEquals(
+            listOf(-480, -240, 0, 120, 240, 360, 480),
+            buildMajorTickMinutes(minMinutes = -480, maxMinutes = 480),
         )
     }
 
@@ -25,13 +33,13 @@ class CenteredDurationSliderTest {
 
     @Test
     fun workdayTickAnchors_followCenteredVisualFractions() {
-        val anchors = buildMajorTickAnchors(minMinutes = -480, maxMinutes = 960, centeredVisual = true)
+        val anchors = buildMajorTickAnchors(minMinutes = -480, maxMinutes = 360, centeredVisual = true)
 
         assertEquals(0f, anchors[0].fraction)
         assertEquals(0.25f, anchors[1].fraction)
         assertEquals(0.5f, anchors[2].fraction)
-        assertEquals(0.625f, anchors[3].fraction)
-        assertEquals(0.8125f, anchors[4].fraction)
+        assertEquals(0.6666667f, anchors[3].fraction, 0.0001f)
+        assertEquals(0.8333333f, anchors[4].fraction, 0.0001f)
         assertEquals(1f, anchors[5].fraction)
     }
 

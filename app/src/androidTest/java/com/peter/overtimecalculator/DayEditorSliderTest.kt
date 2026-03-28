@@ -44,8 +44,8 @@ class DayEditorSliderTest {
         composeRule.onAllNodesWithTag("preset_-120").assertCountEquals(0)
 
         composeRule.onNodeWithTag("duration_slider")
-            .performSemanticsAction(SemanticsActions.SetProgress) { action -> action(0.625f) }
-        composeRule.onNodeWithTag("editor_duration_value").assertTextContains("4.0h")
+            .performSemanticsAction(SemanticsActions.SetProgress) { action -> action(0.75f) }
+        composeRule.onNodeWithTag("editor_duration_value").assertTextContains("3.0h")
 
         composeRule.onNodeWithTag("clear_duration").performClick()
         composeRule.onNodeWithTag("editor_duration_value").assertTextContains("0.0h")
@@ -59,14 +59,14 @@ class DayEditorSliderTest {
         waitForTag("day_editor_sheet")
 
         composeRule.onNodeWithTag("duration_slider")
-            .performSemanticsAction(SemanticsActions.SetProgress) { action -> action(0.75f) }
-        composeRule.onNodeWithTag("editor_duration_value").assertTextContains("8.0h")
+            .performSemanticsAction(SemanticsActions.SetProgress) { action -> action(1f) }
+        composeRule.onNodeWithTag("editor_duration_value").assertTextContains("6.0h")
         composeRule.onNodeWithTag("editor_save").performClick()
 
         composeRule.waitUntil(10_000) {
             composeRule.onAllNodesWithTag("day_editor_sheet").fetchSemanticsNodes().isEmpty()
         }
-        composeRule.onNodeWithTag(dayCardTag(editableDate)).assertTextContains("8.0h")
+        composeRule.onNodeWithTag(dayCardTag(editableDate)).assertTextContains("6.0h")
 
         composeRule.onNodeWithTag(dayCardTag(editableDate)).performClick()
         waitForTag("day_editor_sheet")

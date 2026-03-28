@@ -22,6 +22,8 @@ internal object DurationMapper {
     }
 }
 
+internal const val FocusedWorkdayPositiveMaxMinutes = 6 * 60
+
 internal object VisualCenterMapper {
     fun minutesToSliderFraction(
         minutes: Int,
@@ -67,7 +69,17 @@ internal data class MajorTickAnchor(
 
 internal fun buildMajorTickMinutes(minMinutes: Int, maxMinutes: Int): List<Int> {
     return if (minMinutes < 0) {
-        listOf(minMinutes, -240, 0, 240, 600, maxMinutes)
+        buildList {
+            add(minMinutes)
+            add(-240)
+            add(0)
+            add(120)
+            add(240)
+            if (maxMinutes > FocusedWorkdayPositiveMaxMinutes) {
+                add(FocusedWorkdayPositiveMaxMinutes)
+            }
+            add(maxMinutes)
+        }.distinct()
     } else {
         listOf(0, 240, 600, maxMinutes)
     }

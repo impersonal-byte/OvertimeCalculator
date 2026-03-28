@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.OvertimeEntryValidator
 import com.peter.overtimecalculator.ui.components.CenteredDurationSlider
+import com.peter.overtimecalculator.ui.components.FocusedWorkdayPositiveMaxMinutes
 import com.peter.overtimecalculator.ui.theme.OvertimeTheme
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -53,12 +54,13 @@ internal fun CompTimeDayEditorSheet(
     var overrideType by rememberSaveable(editor.date) { mutableStateOf(editor.currentOverride?.name ?: "") }
     val effectiveDayType = overrideType.takeIf { it.isNotBlank() }?.let(DayType::valueOf) ?: editor.resolvedDayType
     val minMinutes = minAllowedMinutes(effectiveDayType)
+    val maxMinutes = maxAllowedMinutes(effectiveDayType, editor.currentMinutes)
     var totalMinutes by rememberSaveable(editor.date) {
         mutableStateOf(roundSignedToNearestHalfHour(editor.currentMinutes, minMinutes))
     }
 
-    LaunchedEffect(minMinutes) {
-        totalMinutes = totalMinutes.coerceIn(minMinutes, OvertimeEntryValidator.MAX_OVERTIME_MINUTES)
+    LaunchedEffect(minMinutes, maxMinutes) {
+        totalMinutes = totalMinutes.coerceIn(minMinutes, maxMinutes)
     }
 
     ModalBottomSheet(
@@ -120,13 +122,15 @@ internal fun CompTimeDayEditorSheet(
                         valueMinutes = totalMinutes,
                         onValueMinutesChange = { totalMinutes = it },
                         minMinutes = minMinutes,
-                        maxMinutes = OvertimeEntryValidator.MAX_OVERTIME_MINUTES,
+                        maxMinutes = maxMinutes,
                         centeredVisual = minMinutes < 0,
                     )
                     Text(
                         text = when {
                             totalMinutes < 0 -> "当前为调休申请，将优先抵扣本月工作日加班"
-                            effectiveDayType == DayType.WORKDAY -> "工作日支持 -8.0h 到 16.0h，负值表示调休。"
+                            effectiveDayType == DayType.WORKDAY && maxMinutes > FocusedWorkdayPositiveMaxMinutes ->
+                                "工作日默认支持 -8.0h 到 6.0h；当前历史记录保留到 ${formatStepperDuration(maxMinutes)}，负值表示调休。"
+                            effectiveDayType == DayType.WORKDAY -> "工作日支持 -8.0h 到 6.0h，负值表示调休。"
                             else -> "当前类型仅支持 0.0h 到 16.0h。"
                         },
                         style = MaterialTheme.typography.bodySmall,
@@ -234,4 +238,15 @@ private fun adjustSignedDurationMinutes(currentMinutes: Int, deltaMinutes: Int, 
 
 private fun minAllowedMinutes(dayType: DayType): Int {
     return if (dayType == DayType.WORKDAY) OvertimeEntryValidator.MIN_COMP_MINUTES else 0
+}
+
+private fun maxAllowedMinutes(dayType: DayType, currentMinutes: Int): Int {
+    return if (dayType == DayType.WORKDAY) {
+        maxOf(
+            FocusedWorkdayPositiveMaxMinutes,
+            roundSignedToNearestHalfHour(currentMinutes, 0),
+        )
+    } else {
+        OvertimeEntryValidator.MAX_OVERTIME_MINUTES
+    }
 }

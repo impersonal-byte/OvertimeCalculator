@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -55,15 +54,16 @@ internal fun RestoreSection(
         title = "恢复数据",
         subtitle = "从之前创建的 .obackup 备份文件恢复全部数据。当前数据将被覆盖。",
     ) {
-        OutlinedButton(
+        Button(
             onClick = onRestoreClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("restore_btn"),
-            border = BorderStroke(1.dp, defaults.outline),
-            colors = ButtonDefaults.outlinedButtonColors(
+            colors = ButtonDefaults.buttonColors(
+                containerColor = defaults.warningTint.copy(alpha = 0.24f),
                 contentColor = defaults.pageForeground,
             ),
+            border = BorderStroke(1.dp, defaults.outline.copy(alpha = 0.62f)),
         ) {
             Text("从备份恢复")
         }
@@ -90,9 +90,10 @@ internal fun ExportDataSection(
                 .fillMaxWidth()
                 .testTag("export_csv_btn"),
             colors = ButtonDefaults.buttonColors(
-                containerColor = defaults.accent,
-                contentColor = defaults.accentOn,
+                containerColor = defaults.navigationContainer,
+                contentColor = defaults.pageForeground,
             ),
+            border = BorderStroke(1.dp, defaults.outline.copy(alpha = 0.52f)),
         ) {
             Text("导出本月 CSV 数据")
         }
