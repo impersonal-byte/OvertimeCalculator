@@ -43,7 +43,7 @@
 - 支持工作日调休录入，自动按月度余额抵扣
 - 支持手动输入时薪，也支持按已发加班工资反推时薪
 - 支持手动覆盖某一天的日期类型
-- 支持中国节假日基线数据，并通过 `api.haoshenqi.top/holiday` 静默刷新
+- 支持中国节假日基线数据，并通过 `timor.tech` 年度节假日接口静默刷新
 - 支持应用内检查更新，从 GitHub Release 下载新版本
 - 支持外观模式、动态取色与多套种子色切换
 - 支持导出本月 CSV 数据并通过系统分享发送
@@ -86,7 +86,7 @@
 ### 直接下载
 
 - 最新正式版本：`https://github.com/impersonal-byte/OvertimeCalculator/releases/latest`
-- 当前版本详情页：`https://github.com/impersonal-byte/OvertimeCalculator/releases/tag/v2.0.0`
+- 当前版本详情页：`https://github.com/impersonal-byte/OvertimeCalculator/releases/tag/v2.3.1`
 
 ### 安装方式
 
