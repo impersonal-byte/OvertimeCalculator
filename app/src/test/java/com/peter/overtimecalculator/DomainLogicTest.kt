@@ -1,5 +1,6 @@
 package com.peter.overtimecalculator
 
+import com.peter.overtimecalculator.data.holiday.HolidayRulesJsonParser
 import com.peter.overtimecalculator.domain.ConfigPropagationPlanner
 import com.peter.overtimecalculator.domain.DayType
 import com.peter.overtimecalculator.domain.HolidayCalendar
@@ -54,6 +55,29 @@ class DomainLogicTest {
     }
 
     @Test
+    fun holidayCalendar_resolvesOfficialOffWeekdaysAsRestDaysFromSchemaVersion1Rules() {
+        val calendar = HolidayCalendar {
+            HolidayRulesJsonParser.parse(
+                """
+                {
+                  "schemaVersion": 1,
+                  "updatedAt": "2026-03-09T00:00:00Z",
+                  "years": {
+                    "2026": {
+                      "holidayDates": ["2026-10-01"],
+                      "restDates": ["2026-10-06"],
+                      "workingDates": ["2026-10-10"]
+                    }
+                  }
+                }
+                """.trimIndent(),
+            )
+        }
+
+        assertEquals(DayType.REST_DAY, calendar.resolveDayType(LocalDate.parse("2026-10-06"), null))
+    }
+
+    @Test
     fun monthlyCalculator_deductsCompTimeByPriority() {
         val config = testConfig(hourlyRate = decimal("40.00"))
         val calculator = MonthlyOvertimeCalculator(holidayCalendar)
@@ -92,6 +116,41 @@ class DomainLogicTest {
         assertEquals(-120, result.summary.totalMinutes)
         assertDecimalEquals("0.00", result.summary.totalPay)
         assertEquals(120, result.summary.uncoveredCompMinutes)
+    }
+
+    @Test
+    fun monthlyCalculator_usesRestDayRateForOfficialOffWeekdays() {
+        val calculator = MonthlyOvertimeCalculator(
+            HolidayCalendar {
+                HolidayRulesJsonParser.parse(
+                    """
+                    {
+                      "schemaVersion": 1,
+                      "updatedAt": "2026-03-09T00:00:00Z",
+                      "years": {
+                        "2026": {
+                          "holidayDates": ["2026-10-01"],
+                          "restDates": ["2026-10-06"],
+                          "workingDates": ["2026-10-10"]
+                        }
+                      }
+                    }
+                    """.trimIndent(),
+                )
+            },
+        )
+        val result = calculator.calculate(
+            yearMonth = YearMonth.of(2026, 10),
+            config = testConfig(hourlyRate = decimal("40.00")),
+            entryMinutesByDate = mapOf(LocalDate.parse("2026-10-06") to 240),
+            overrideTypesByDate = emptyMap(),
+        )
+
+        assertEquals(
+            DayType.REST_DAY,
+            result.dayCells.first { it.date == LocalDate.parse("2026-10-06") }.dayType,
+        )
+        assertDecimalEquals("320.00", result.summary.totalPay)
     }
 
     @Test

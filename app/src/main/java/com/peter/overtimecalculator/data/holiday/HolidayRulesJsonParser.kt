@@ -21,6 +21,7 @@ object HolidayRulesJsonParser {
             val yearData = yearsObject.getJSONObject(yearKey)
             years[yearKey.toInt()] = HolidayYearRules(
                 holidayDates = yearData.getJSONArray("holidayDates").toLocalDateSet(),
+                restDates = yearData.optJSONArray("restDates")?.toLocalDateSet() ?: emptySet(),
                 workingDates = yearData.getJSONArray("workingDates").toLocalDateSet(),
             )
         }

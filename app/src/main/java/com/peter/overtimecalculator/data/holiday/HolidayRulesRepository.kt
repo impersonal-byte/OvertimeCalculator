@@ -121,7 +121,7 @@ class HolidayRulesRepository(
                 continue
             }
             val parsedYearRules = try {
-                HolidayHaoshenqiApiParser.parse(json)
+                TimorHolidayApiParser.parse(json)
             } catch (_: Exception) {
                 continue
             }
@@ -156,7 +156,7 @@ class HolidayRulesRepository(
     companion object {
         const val BASELINE_ASSET_PATH = "holidays/cn_mainland.json"
         const val DEFAULT_REMOTE_URL_TEMPLATE =
-            "https://api.haoshenqi.top/holiday?date=%d"
+            "https://timor.tech/api/holiday/year/%d/?type=Y"
         private const val REMOTE_FORWARD_YEARS = 1
 
         private val KEY_REMOTE_JSON = stringPreferencesKey("remote_json")
@@ -166,5 +166,5 @@ class HolidayRulesRepository(
 }
 
 private fun HolidayYearRules.hasMeaningfulOverrides(): Boolean {
-    return holidayDates.isNotEmpty() || workingDates.isNotEmpty()
+    return holidayDates.isNotEmpty() || restDates.isNotEmpty() || workingDates.isNotEmpty()
 }

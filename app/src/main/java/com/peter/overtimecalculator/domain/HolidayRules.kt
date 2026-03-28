@@ -4,6 +4,7 @@ import java.time.LocalDate
 
 data class HolidayYearRules(
     val holidayDates: Set<LocalDate>,
+    val restDates: Set<LocalDate> = emptySet(),
     val workingDates: Set<LocalDate>,
 )
 
@@ -37,6 +38,7 @@ class HolidayCalendar(
         if (yearRules != null) {
             if (date in yearRules.holidayDates) return DayType.HOLIDAY
             if (date in yearRules.workingDates) return DayType.WORKDAY
+            if (date in yearRules.restDates) return DayType.REST_DAY
         }
 
         return when (date.dayOfWeek.value) {

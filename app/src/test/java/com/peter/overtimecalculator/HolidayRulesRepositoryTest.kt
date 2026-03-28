@@ -5,11 +5,14 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.AssetManager
 import androidx.test.core.app.ApplicationProvider
+import com.peter.overtimecalculator.domain.DayType
+import com.peter.overtimecalculator.domain.HolidayCalendar
 import com.peter.overtimecalculator.data.holiday.HolidayRefreshResult
 import com.peter.overtimecalculator.data.holiday.HolidayRemoteClient
 import com.peter.overtimecalculator.data.holiday.HolidayRulesRepository
 import java.io.File
 import java.time.LocalDate
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -25,12 +28,15 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class, sdk = [35])
+@OptIn(ExperimentalCoroutinesApi::class)
 class HolidayRulesRepositoryTest {
     @get:Rule
     val temporaryFolder = TemporaryFolder()
 
+    private val timorUrlTemplate = "https://timor.tech/api/holiday/year/%d/?type=Y"
+
     @Test
-    fun refreshRemoteRules_fetchesCurrentAndNextYear_andPersistsMetadataAndCache() = runTest {
+    fun refreshRemoteRules_fetchesTimorYears_andPersistsRestDaySemanticsInCache() = runTest {
         val requestedUrls = mutableListOf<String>()
         val context = isolatedContext("refresh")
         val dispatcher = StandardTestDispatcher(testScheduler)
@@ -39,18 +45,28 @@ class HolidayRulesRepositoryTest {
             applicationScope = backgroundScope,
             ioDispatcher = dispatcher,
             currentYearProvider = { 2026 },
+            remoteUrlTemplate = timorUrlTemplate,
             remoteClient = fakeRemoteClient { url ->
                 requestedUrls += url
                 when (url) {
-                    "https://api.haoshenqi.top/holiday?date=2026" ->
+                    timorUrlTemplate.format(2026) ->
                         """
-                        [
-                          { "date": "2026-10-01", "status": 3 },
-                          { "date": "2026-10-10", "status": 2 }
-                        ]
+                        {
+                          "holiday": {
+                            "10-01": { "holiday": true, "name": "国庆节", "wage": 3, "date": "2026-10-01" },
+                            "10-06": { "holiday": true, "name": "国庆节", "wage": 2, "date": "2026-10-06" },
+                            "10-10": { "holiday": false, "name": "国庆节后补班", "wage": 1, "after": true, "target": "国庆节", "date": "2026-10-10" }
+                          }
+                        }
                         """.trimIndent()
-                    "https://api.haoshenqi.top/holiday?date=2027" ->
-                        """[{ "date": "2027-01-01", "status": 3 }]"""
+                    timorUrlTemplate.format(2027) ->
+                        """
+                        {
+                          "holiday": {
+                            "01-01": { "holiday": true, "name": "元旦", "wage": 3, "date": "2027-01-01" }
+                          }
+                        }
+                        """.trimIndent()
                     else -> error("Unexpected URL: $url")
                 }
             },
@@ -63,19 +79,21 @@ class HolidayRulesRepositoryTest {
         assertEquals(HolidayRefreshResult.Updated, result)
         assertEquals(
             listOf(
-                "https://api.haoshenqi.top/holiday?date=2026",
-                "https://api.haoshenqi.top/holiday?date=2027",
+                timorUrlTemplate.format(2026),
+                timorUrlTemplate.format(2027),
             ),
             requestedUrls,
         )
-        assertTrue(LocalDate.parse("2026-10-01") in repository.currentRules().years.getValue(2026).holidayDates)
-        assertTrue(LocalDate.parse("2026-10-10") in repository.currentRules().years.getValue(2026).workingDates)
+        val calendar = HolidayCalendar(repository::currentRules)
+        assertEquals(DayType.HOLIDAY, calendar.resolveDayType(LocalDate.parse("2026-10-01"), null))
+        assertEquals(DayType.REST_DAY, calendar.resolveDayType(LocalDate.parse("2026-10-06"), null))
+        assertEquals(DayType.WORKDAY, calendar.resolveDayType(LocalDate.parse("2026-10-10"), null))
         assertTrue(LocalDate.parse("2027-01-01") in repository.currentRules().years.getValue(2027).holidayDates)
         assertTrue(repository.currentRules().years.containsKey(2028))
 
         val metadata = repository.readRemoteMetadata()
         requireNotNull(metadata)
-        assertEquals(HolidayRulesRepository.DEFAULT_REMOTE_URL_TEMPLATE, metadata.sourceUrl)
+        assertEquals(timorUrlTemplate, metadata.sourceUrl)
         assertFalse(metadata.updatedAt.isBlank())
         assertTrue(metadata.fetchedAtEpochMillis > 0L)
 
@@ -84,11 +102,13 @@ class HolidayRulesRepositoryTest {
             applicationScope = backgroundScope,
             ioDispatcher = dispatcher,
             currentYearProvider = { 2026 },
+            remoteUrlTemplate = timorUrlTemplate,
             remoteClient = fakeRemoteClient { error("Cached initialization should not hit network") },
         )
         advanceUntilIdle()
 
-        assertTrue(LocalDate.parse("2027-01-01") in cachedRepository.currentRules().years.getValue(2027).holidayDates)
+        val cachedCalendar = HolidayCalendar(cachedRepository::currentRules)
+        assertEquals(DayType.REST_DAY, cachedCalendar.resolveDayType(LocalDate.parse("2026-10-06"), null))
     }
 
     @Test
@@ -100,14 +120,15 @@ class HolidayRulesRepositoryTest {
             applicationScope = backgroundScope,
             ioDispatcher = dispatcher,
             currentYearProvider = { 2026 },
-            remoteClient = fakeRemoteClient { """[{ "date": "2026-10-02", "status": 0 }]""" },
+            remoteUrlTemplate = timorUrlTemplate,
+            remoteClient = fakeRemoteClient { """{ "holiday": {} }""" },
         )
         advanceUntilIdle()
 
         val result = repository.refreshRemoteRules()
 
         assertEquals(HolidayRefreshResult.Skipped, result)
-        assertEquals("2026-03-09T00:00:00Z", repository.currentRules().updatedAt)
+        assertEquals("2026-03-24T00:00:00Z", repository.currentRules().updatedAt)
         assertTrue(LocalDate.parse("2026-10-01") in repository.currentRules().years.getValue(2026).holidayDates)
     }
 
