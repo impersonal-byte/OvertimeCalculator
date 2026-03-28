@@ -1,7 +1,7 @@
 import java.util.Properties
 
-val appVersionCode = 17
-val appVersionName = "2.3.0"
+val appVersionCode = 18
+val appVersionName = "2.3.1"
 val localProperties = Properties().apply {
     val localPropertiesFile = rootProject.file("local.properties")
     if (localPropertiesFile.exists()) {
