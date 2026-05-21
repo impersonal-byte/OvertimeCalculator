@@ -86,7 +86,7 @@
 ### 直接下载
 
 - 最新正式版本：`https://github.com/impersonal-byte/OvertimeCalculator/releases/latest`
-- 当前版本详情页：`https://github.com/impersonal-byte/OvertimeCalculator/releases/tag/v2.3.1`
+- 当前版本详情页：`https://github.com/impersonal-byte/OvertimeCalculator/releases/tag/v2.3.2`
 
 ### 安装方式
 
