@@ -32,6 +32,15 @@ Requirements for the initial GSD planning baseline. Each maps to roadmap phases.
 - [x] **UXP-04**: Data-management backup, restore, and CSV export actions use coordinated button emphasis so no single action looks visually out of family
 - [x] **UXP-05**: Only 3x-pay statutory dates resolve as `HOLIDAY`; other official days off resolve as `REST_DAY`, while makeup workdays remain `WORKDAY`
 
+### UX System Upgrade (MD3-first)
+
+- [ ] **UXS-01**: Home and month-switch flows expose explicit loading/content/empty/error states instead of ambiguous placeholder-only rendering
+- [ ] **UXS-02**: Day-entry save and long-running data/update operations provide visible in-progress and completion feedback with low interruption cost
+- [ ] **UXS-03**: Core UI surfaces adopt a shared token baseline for spacing, shape, elevation, and action emphasis aligned with MD3 semantics
+- [ ] **UXS-04**: High-frequency interactions (day cells, key actions, icon affordances) meet accessibility semantics and tap-feedback expectations
+- [ ] **UXS-05**: Numeric information hierarchy is strengthened for faster scan and comprehension while preserving compact-but-breathable density
+- [ ] **UXS-06**: md3E expression remains selective and utility-oriented, improving clarity/delight without introducing decorative overload
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -67,12 +76,18 @@ Deferred to future release. Tracked but not in current roadmap.
 | UXP-03 | Phase 5 | Complete |
 | UXP-04 | Phase 5 | Complete |
 | UXP-05 | Phase 5 | Complete |
+| UXS-01 | Phase 6 | Pending |
+| UXS-02 | Phase 6 | Pending |
+| UXS-03 | Phase 6 | Pending |
+| UXS-04 | Phase 6 | Pending |
+| UXS-05 | Phase 6 | Pending |
+| UXS-06 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 13 total
-- Mapped to phases: 13
+- v1 requirements: 19 total
+- Mapped to phases: 19
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-14*
-*Last updated: 2026-03-28 after Phase 05 completion*
+*Last updated: 2026-03-31 after Phase 06 definition*

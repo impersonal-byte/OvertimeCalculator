@@ -128,6 +128,7 @@ class BackupRestoreViewModelTest {
         runBlocking {
             viewModel.previewRestoreBackup(validEncodedBackup())
             awaitRestoreConfirmation()
+            val stateDeferred = async { viewModel.uiState.first { it.selectedMonth == YearMonth.of(2026, 3) } }
             val eventDeferred = async { viewModel.events.take(3).toList() }
 
             viewModel.confirmRestore()
@@ -139,7 +140,7 @@ class BackupRestoreViewModelTest {
             val snackbar = events[1] as UiEvent.ShowSnackbar
             assertEquals("数据恢复成功", snackbar.message)
             assertTrue(events[2] is UiEvent.TriggerHaptic)
-            assertEquals(YearMonth.of(2026, 3), viewModel.uiState.value.selectedMonth)
+            assertEquals(YearMonth.of(2026, 3), withTimeout(5_000) { stateDeferred.await() }.selectedMonth)
             withTimeout(5_000) {
                 while (viewModel.restoreConfirmation.value != null) {
                     delay(20)

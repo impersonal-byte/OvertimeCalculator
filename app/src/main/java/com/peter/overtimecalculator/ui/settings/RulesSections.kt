@@ -1,5 +1,6 @@
 package com.peter.overtimecalculator.ui.settings
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -9,8 +10,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -80,21 +87,15 @@ internal fun HourlyRateControlSection(
                     modifier = Modifier.testTag("manual_hourly_panel"),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    OutlinedTextField(
+                    CommitInputRow(
                         value = hourlyRateText,
                         onValueChange = onHourlyRateTextChange,
                         label = { Text("时薪（元/小时）") },
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("hourly_rate_input"),
+                        inputTag = "hourly_rate_input",
+                        actionTag = "save_hourly_rate",
+                        actionContentDescription = "确认时薪",
+                        onCommit = onSaveHourlyRate,
                     )
-                    Button(
-                        onClick = onSaveHourlyRate,
-                        modifier = Modifier.testTag("save_hourly_rate"),
-                    ) {
-                        Text("保存时薪")
-                    }
                 }
             }
 
@@ -103,14 +104,14 @@ internal fun HourlyRateControlSection(
                     modifier = Modifier.testTag("reverse_panel"),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    OutlinedTextField(
+                    CommitInputRow(
                         value = reversePayText,
                         onValueChange = onReversePayTextChange,
                         label = { Text("已发加班工资总额") },
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("reverse_pay_input"),
+                        inputTag = "reverse_pay_input",
+                        actionTag = "start_reverse",
+                        actionContentDescription = "确认反推",
+                        onCommit = onReverseEngineer,
                     )
                     Text(
                         "时薪 = 总额 / Σ(每日工时 × 当日倍率)",
@@ -123,14 +124,63 @@ internal fun HourlyRateControlSection(
                         style = MaterialTheme.typography.bodySmall,
                         color = subtleTextColor,
                     )
-                    Button(
-                        onClick = onReverseEngineer,
-                        modifier = Modifier.testTag("start_reverse"),
-                    ) {
-                        Text("保存并反推")
-                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CommitInputRow(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: @Composable () -> Unit,
+    inputTag: String,
+    actionTag: String,
+    actionContentDescription: String,
+    onCommit: () -> Unit,
+) {
+    val defaults = OvertimeTheme.defaults
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = label,
+            singleLine = true,
+            shape = RoundedCornerShape(
+                topStart = 50.dp,
+                bottomStart = 50.dp,
+                topEnd = 28.dp,
+                bottomEnd = 28.dp,
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .testTag(inputTag),
+        )
+        Button(
+            onClick = onCommit,
+            shape = RoundedCornerShape(
+                topStart = 28.dp,
+                bottomStart = 28.dp,
+                topEnd = 50.dp,
+                bottomEnd = 50.dp,
+            ),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = defaults.accent,
+                contentColor = defaults.accentOn,
+            ),
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier
+                .width(72.dp)
+                .height(58.dp)
+                .testTag(actionTag),
+        ) {
+            Icon(Icons.Default.Check, contentDescription = actionContentDescription)
         }
     }
 }

@@ -2,13 +2,9 @@ package com.peter.overtimecalculator.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -42,7 +38,7 @@ import java.util.Locale
 
 private const val DurationStepMinutes = 30
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun CompTimeDayEditorSheet(
     editor: DayEditorUiState,
@@ -76,11 +72,26 @@ internal fun CompTimeDayEditorSheet(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                text = editor.date.format(DateTimeFormatter.ofPattern("M 月 d 日 EEEE", Locale.CHINA)),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = editor.date.format(DateTimeFormatter.ofPattern("M 月 d 日 EEEE", Locale.CHINA)),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                Button(
+                    onClick = {
+                        onSave(totalMinutes, overrideType.takeIf { it.isNotBlank() }?.let(DayType::valueOf))
+                    },
+                    modifier = Modifier.testTag("editor_save"),
+                ) {
+                    Text("保存")
+                }
+            }
             Surface(
                 tonalElevation = 1.dp,
                 shape = RoundedCornerShape(24.dp),
@@ -172,33 +183,23 @@ internal fun CompTimeDayEditorSheet(
                         style = MaterialTheme.typography.labelLarge,
                         color = subtleTextColor,
                     )
-                    FlowRow(
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        OverrideChip("跟随系统", overrideType.isBlank(), "override_system") { overrideType = "" }
+                        OverrideChip(
+                            label = "跟随系统",
+                            selected = overrideType.isBlank(),
+                            tag = "override_system",
+                            modifier = Modifier.weight(1f),
+                        ) { overrideType = "" }
                         DayType.entries.forEach { type ->
                             OverrideChip(
                                 label = dayTypeLabel(type),
                                 selected = overrideType == type.name,
                                 tag = "override_${type.name.lowercase(Locale.US)}",
+                                modifier = Modifier.weight(1f),
                             ) { overrideType = type.name }
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        TextButton(onClick = onDismiss) { Text("取消") }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(
-                            onClick = {
-                                onSave(totalMinutes, overrideType.takeIf { it.isNotBlank() }?.let(DayType::valueOf))
-                            },
-                            modifier = Modifier.testTag("editor_save"),
-                        ) {
-                            Text("保存")
                         }
                     }
                 }
@@ -208,12 +209,26 @@ internal fun CompTimeDayEditorSheet(
 }
 
 @Composable
-private fun OverrideChip(label: String, selected: Boolean, tag: String, onClick: () -> Unit) {
+private fun OverrideChip(
+    label: String,
+    selected: Boolean,
+    tag: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
     FilterChip(
         selected = selected,
         onClick = onClick,
-        modifier = Modifier.testTag(tag),
-        label = { Text(label) },
+        modifier = modifier.testTag(tag),
+        label = {
+            Text(
+                text = label,
+                maxLines = 1,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
     )
 }
 

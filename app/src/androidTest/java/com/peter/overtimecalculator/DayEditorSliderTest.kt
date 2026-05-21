@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
@@ -16,6 +17,7 @@ import java.time.LocalDate
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Assert.assertTrue
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
@@ -49,6 +51,40 @@ class DayEditorSliderTest {
 
         composeRule.onNodeWithTag("clear_duration").performClick()
         composeRule.onNodeWithTag("editor_duration_value").assertTextContains("0.0h")
+    }
+
+    @Test
+    fun dayEditorUsesSheetDismissForCancelAndKeepsSaveActionVisible() {
+        val editableDate = editableDate()
+
+        composeRule.onNodeWithTag(dayCardTag(editableDate)).performClick()
+        waitForTag("day_editor_sheet")
+
+        composeRule.onNodeWithTag("editor_save").assertIsDisplayed()
+        composeRule.onAllNodesWithText("取消").assertCountEquals(0)
+    }
+
+    @Test
+    fun dayEditorKeepsOverrideChoicesOnOneRow() {
+        val editableDate = editableDate()
+
+        composeRule.onNodeWithTag(dayCardTag(editableDate)).performClick()
+        waitForTag("day_editor_sheet")
+
+        val optionTops = listOf(
+            "override_system",
+            "override_workday",
+            "override_rest_day",
+            "override_holiday",
+        ).map { tag ->
+            composeRule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot.top
+        }
+
+        val verticalSpread = optionTops.maxOrNull()!! - optionTops.minOrNull()!!
+        assertTrue(
+            "Expected all date-type override options to stay on one row, but top positions were $optionTops",
+            verticalSpread < 2f,
+        )
     }
 
     @Test

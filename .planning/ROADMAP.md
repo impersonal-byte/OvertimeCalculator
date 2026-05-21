@@ -17,6 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Data backup and restore** - Close the export-only data gap with app-controlled full-fidelity backup and restore (completed 2026-03-15)
 - [x] **Phase 4: Animeko visual migration** - Reference the in-repo `animeko` implementation and migrate its interface and color language into this app, replacing prior custom UI styling, including merged real-device light-theme hierarchy follow-up after rollout (completed 2026-03-21)
 - [x] **Phase 5: 细节体验优化** - Polish post-migration interaction fidelity in day entry, settings chrome, data-management actions, and holiday classification (completed 2026-03-28)
+- [ ] **Phase 6: Material 3 交互系统化升级** - Systematically elevate interaction quality with MD3-first state feedback, token consistency, accessibility hardening, and selective md3E expression
 
 ## Phase Details
 
@@ -36,7 +37,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -45,6 +46,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 3. Data backup and restore | 4/4 | Complete    | 2026-03-15 |
 | 4. Animeko visual migration | 6/6 | Complete | 2026-03-21 |
 | 5. 细节体验优化 | 3/3 | Complete | 2026-03-28 |
+| 6. Material 3 交互系统化升级 | 0/4 | Not started | - |
 
 ### Phase 2: No handwritten input
 
@@ -120,5 +122,26 @@ Plans:
 - [x] 05-01: Reclassify holiday day types around 3x-only statutory dates
 - [x] 05-02: Tighten day-entry precision and align data-management actions
 - [x] 05-03: Compact theme switching and harmonize settings chrome
+
+### Phase 6: Material 3 交互系统化升级
+
+**Goal:** Consolidate the app into a coherent MD3-first interaction system by adding explicit state feedback, unifying design tokens and component hierarchy, strengthening accessibility and interaction affordance quality, and applying restrained md3E accents that preserve utility-app efficiency.
+**Requirements**: [UXS-01, UXS-02, UXS-03, UXS-04, UXS-05, UXS-06]
+**Depends on:** Phase 5
+**Plans:** 4 plans
+
+**Success Criteria** (what must be TRUE):
+  1. Home and month-switch flows expose explicit `Loading`, `Content`, `Empty`, and `Error` states so users no longer see ambiguous placeholder-only rendering.
+  2. Day-entry save, restore/backup/export/update operations provide visible progress and outcome feedback (light success acknowledgment + clear in-progress affordance) without increasing interaction friction.
+  3. Core surfaces and controls use a documented token baseline (spacing/shape/elevation/emphasis) so previously mixed dp values and ad-hoc hierarchy decisions are replaced with consistent MD3 semantics.
+  4. High-frequency interactive elements (calendar day cells, key action buttons, icons) meet accessibility expectations through meaningful semantics and clearer tap affordances.
+  5. Typography and emphasis make key numeric results more legible and scannable while keeping overall density "compact but breathable" for daily utility use.
+  6. md3E usage remains selective and measured (motion/hierarchy delight without visual overload), maintaining a "精致工具感" rather than shifting into a decorative redesign.
+
+Plans:
+- [ ] 06-01: Implement explicit state feedback model for home and long-running operations
+- [ ] 06-02: Establish MD3 token baseline for spacing, shape, elevation, and action emphasis
+- [ ] 06-03: Refine home/day-editor interaction affordance, semantics, and number-first typographic hierarchy
+- [ ] 06-04: Harmonize settings/data-management interaction efficiency with restrained md3E polish
 
 

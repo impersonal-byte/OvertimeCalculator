@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -66,6 +67,23 @@ class MainFlowTest {
         waitForTag("reverse_panel")
         composeRule.onNodeWithTag("reverse_panel").assertIsDisplayed()
         composeRule.onAllNodesWithTag("manual_hourly_panel").assertCountEquals(0)
+    }
+
+    @Test
+    fun hourlyRateCommitActionsUseIconOnlySegmentButtons() {
+        openRulesScreen()
+        ensureManualMode()
+
+        composeRule.onNodeWithTag("hourly_rate_input").assertIsDisplayed()
+        composeRule.onNodeWithTag("save_hourly_rate").assertIsDisplayed()
+        composeRule.onAllNodesWithText("保存时薪").assertCountEquals(0)
+
+        composeRule.onNodeWithTag("hourly_mode_reverse").performClick()
+        waitForTag("reverse_panel")
+
+        composeRule.onNodeWithTag("reverse_pay_input").assertIsDisplayed()
+        composeRule.onNodeWithTag("start_reverse").assertIsDisplayed()
+        composeRule.onAllNodesWithText("保存并反推").assertCountEquals(0)
     }
 
     @Test
