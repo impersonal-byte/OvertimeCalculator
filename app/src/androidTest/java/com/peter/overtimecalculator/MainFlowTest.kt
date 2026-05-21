@@ -4,6 +4,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -17,6 +18,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.FileInputStream
 import java.time.LocalDate
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -40,6 +42,27 @@ class MainFlowTest {
         composeRule.onNodeWithTag("summary_card").assertIsDisplayed()
         composeRule.onNodeWithTag("calendar_grid").assertIsDisplayed()
         composeRule.onNodeWithTag(dayCardTag(editableDate())).assertIsDisplayed()
+    }
+
+    @Test
+    fun summaryPrivacyToggleMasksPayAndHourlyRate() {
+        composeRule.onNodeWithTag("summary_total_pay").assertIsDisplayed()
+        composeRule.onNodeWithTag("summary_hourly_rate").assertIsDisplayed()
+        val totalPayBounds = composeRule.onNodeWithTag("summary_total_pay").getUnclippedBoundsInRoot()
+        val hourlyRateBounds = composeRule.onNodeWithTag("summary_hourly_rate").getUnclippedBoundsInRoot()
+
+        composeRule.onNodeWithTag("summary_privacy_toggle").performClick()
+
+        composeRule.onNodeWithTag("summary_total_pay").assertIsDisplayed()
+        composeRule.onNodeWithTag("summary_hourly_rate").assertIsDisplayed()
+        composeRule.onNodeWithTag("summary_total_pay_mask").assertIsDisplayed()
+        composeRule.onNodeWithTag("summary_hourly_rate_mask").assertIsDisplayed()
+        assertEquals(totalPayBounds, composeRule.onNodeWithTag("summary_total_pay").getUnclippedBoundsInRoot())
+        assertEquals(hourlyRateBounds, composeRule.onNodeWithTag("summary_hourly_rate").getUnclippedBoundsInRoot())
+
+        composeRule.onNodeWithTag("summary_privacy_toggle").performClick()
+        composeRule.onNodeWithTag("summary_total_pay").assertIsDisplayed()
+        composeRule.onNodeWithTag("summary_hourly_rate").assertIsDisplayed()
     }
 
     @Test

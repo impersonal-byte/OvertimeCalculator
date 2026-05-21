@@ -3,6 +3,7 @@ package com.peter.overtimecalculator.ui
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -23,9 +26,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -51,6 +59,7 @@ private val monthFormatter = DateTimeFormatter.ofPattern("yyyy 年 M 月", Local
 internal fun SummaryCard(uiState: AppUiState, dayCells: List<DayCellUiState>) {
     val defaults = OvertimeTheme.defaults
     val isDark = defaults.pageBackground.luminance() < 0.5f
+    var privacyEnabled by rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     val cardBrush = remember(defaults) {
         Brush.verticalGradient(
             colors = listOf(
@@ -77,20 +86,40 @@ internal fun SummaryCard(uiState: AppUiState, dayCells: List<DayCellUiState>) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Icon(Icons.Default.CalendarMonth, contentDescription = null)
-                Text(
-                    uiState.selectedMonth.format(monthFormatter),
-                    style = MaterialTheme.typography.titleSmall,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(Icons.Default.CalendarMonth, contentDescription = null)
+                    Text(
+                        uiState.selectedMonth.format(monthFormatter),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                }
+                IconButton(
+                    onClick = { privacyEnabled = !privacyEnabled },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = defaults.navigationContainer.copy(alpha = 0.76f),
+                        contentColor = defaults.pageForeground,
+                    ),
+                    modifier = Modifier.testTag("summary_privacy_toggle"),
+                ) {
+                    Icon(
+                        imageVector = if (privacyEnabled) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = if (privacyEnabled) "显示隐私金额" else "隐藏隐私金额",
+                    )
+                }
             }
-            Text(
-                "¥${uiState.summary.totalPay.toDisplayString()}",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Black,
-                modifier = Modifier.testTag("summary_total_pay"),
+            SensitiveSummaryValue(
+                value = "¥${uiState.summary.totalPay.toDisplayString()}",
+                hidden = privacyEnabled,
+                visibleTag = "summary_total_pay",
+                hiddenTag = "summary_total_pay_mask",
+                style = SensitiveValueStyle.Total,
             )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 SummaryMetric("累计时长", formatMinutes(uiState.summary.totalMinutes))
@@ -100,6 +129,9 @@ internal fun SummaryCard(uiState: AppUiState, dayCells: List<DayCellUiState>) {
                         HourlyRateSource.REVERSE_ENGINEERED -> "当前时薪·反推"
                     },
                     value = "¥${uiState.config.hourlyRate.toDisplayString()}",
+                    valueTag = "summary_hourly_rate",
+                    hiddenTag = "summary_hourly_rate_mask",
+                    hidden = privacyEnabled,
                 )
             }
             if (uiState.summary.uncoveredCompMinutes > 0) {
@@ -129,7 +161,13 @@ internal fun SummaryCard(uiState: AppUiState, dayCells: List<DayCellUiState>) {
 }
 
 @Composable
-private fun SummaryMetric(label: String, value: String) {
+private fun SummaryMetric(
+    label: String,
+    value: String,
+    valueTag: String? = null,
+    hiddenTag: String? = null,
+    hidden: Boolean = false,
+) {
     val defaults = OvertimeTheme.defaults
 
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -138,7 +176,90 @@ private fun SummaryMetric(label: String, value: String) {
             style = MaterialTheme.typography.labelMedium,
             color = defaults.pageForeground.copy(alpha = 0.72f),
         )
-        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        SensitiveSummaryValue(
+            value = value,
+            hidden = hidden,
+            visibleTag = valueTag,
+            hiddenTag = hiddenTag,
+            style = SensitiveValueStyle.Metric,
+        )
+    }
+}
+
+private enum class SensitiveValueStyle {
+    Total,
+    Metric,
+}
+
+@Composable
+private fun SensitiveSummaryValue(
+    value: String,
+    hidden: Boolean,
+    visibleTag: String?,
+    style: SensitiveValueStyle,
+    hiddenTag: String? = null,
+) {
+    val defaults = OvertimeTheme.defaults
+    val textStyle = when (style) {
+        SensitiveValueStyle.Total -> MaterialTheme.typography.headlineLarge
+        SensitiveValueStyle.Metric -> MaterialTheme.typography.titleSmall
+    }
+    val textWeight = when (style) {
+        SensitiveValueStyle.Total -> FontWeight.Black
+        SensitiveValueStyle.Metric -> FontWeight.Bold
+    }
+
+    Box(
+        modifier = if (visibleTag != null) Modifier.testTag(visibleTag) else Modifier,
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(
+            value,
+            style = textStyle,
+            fontWeight = textWeight,
+        )
+        if (hidden) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(999.dp))
+                    .then(if (hiddenTag != null) Modifier.testTag(hiddenTag) else Modifier),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(
+                            color = defaults.cardElevatedContainer.copy(alpha = 0.92f),
+                            shape = RoundedCornerShape(999.dp),
+                        ),
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    defaults.cardElevatedContainer.copy(alpha = 0.72f),
+                                    defaults.accent.copy(alpha = 0.08f),
+                                    defaults.cardElevatedContainer.copy(alpha = 0.78f),
+                                    defaults.pageForeground.copy(alpha = 0.04f),
+                                ),
+                            ),
+                            shape = RoundedCornerShape(999.dp),
+                        ),
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .blur(8.dp)
+                        .background(
+                            color = defaults.cardElevatedContainer.copy(alpha = 0.56f),
+                            shape = RoundedCornerShape(999.dp),
+                        ),
+                )
+            }
+        }
     }
 }
 
